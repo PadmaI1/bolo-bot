@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Copilot - Live Coaching Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line me-2"></i>Sales Copilot
+            </a>
+            <div class="navbar-nav ms-auto">
+                <button id="startCoachingBtn" class="btn btn-success me-2">
+                    <i class="fas fa-play me-1"></i>Start Web Demo (Browser Coaching)
+                </button>
+                <button id="stopCoachingBtn" class="btn btn-danger me-2" disabled>
+                    <i class="fas fa-stop me-1"></i>Stop
+                </button>
+                <span class="navbar-text">
+                    <span id="connectionStatus" class="badge bg-warning">Connecting...</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-3">
+        <!-- Info Alert -->
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <strong><i class="fas fa-info-circle me-2"></i>Two Testing Options:</strong>
+            <ul class="mb-0">
+                <li><strong>Phone Testing (Below):</strong> Agent makes real phone calls to your number using Twilio</li>
+                <li><strong>Web Demo (Top Button):</strong> Test coaching in browser using your microphone (no phone call)</li>
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <!-- Phone Testing Panel -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-phone-alt me-2"></i>📞 B2B Sales Agent - Real Phone Calls</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="alert alert-primary" role="alert">
+                                    <h6 class="alert-heading"><i class="fas fa-robot me-2"></i>About This Agent</h6>
+                                    <p class="mb-1"><strong>Name:</strong> Priya Sharma from Murf AI Team</p>
+                                    <p class="mb-1"><strong>Purpose:</strong> Calls to discuss Murf AI voice synthesis API integration</p>
+                                    <p class="mb-1"><strong>Voice:</strong> Premium Indian English (en-IN-priya)</p>
+                                    <p class="mb-0"><strong>Languages:</strong> English, Hindi, Telugu (automatically switches based on your response)</p>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Your Phone Number (E.164 format):</label>
+                                    <input type="tel" class="form-control form-control-lg" id="phoneNumber" placeholder="+916397983037" value="+916397983037">
+                                    <small class="form-text text-muted">Include country code (e.g., +91 for India)</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Lead Name:</label>
+                                    <input type="text" class="form-control" id="leadName" placeholder="Arjun" value="Arjun">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Company (optional):</label>
+                                    <input type="text" class="form-control" id="leadCompany" placeholder="Your Company Name">
+                                </div>
+                                <button class="btn btn-success btn-lg w-100 shadow" id="makeB2BCallBtn">
+                                    <i class="fas fa-phone me-2"></i>Call Me Now - Test B2B Sales
+                                </button>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light h-100">
+                                    <div class="card-body">
+                                        <h6 class="text-primary"><i class="fas fa-info-circle me-1"></i>What Happens?</h6>
+                                        <ol class="small">
+                                            <li>You'll receive a call from our Twilio number</li>
+                                            <li>Agent introduces herself as Priya from Murf AI</li>
+                                            <li>She discusses Murf API features</li>
+                                            <li>Responds intelligently to your questions</li>
+                                            <li>Switches languages if you prefer Hindi/Telugu</li>
+                                        </ol>
+                                        <div class="alert alert-warning small mb-0">
+                                            <strong>Note:</strong> This is a real phone call. Standard carrier charges may apply.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div id="callStatus" class="alert alert-secondary" style="display: none;">
+                                    <strong><i class="fas fa-spinner fa-spin me-2"></i>Call Status:</strong> <span id="callStatusText">Initializing...</span>
+                                </div>
+                                <div id="callLog" class="border rounded p-3 bg-white" style="max-height: 200px; overflow-y: auto; display: none;">
+                                    <h6 class="text-dark"><i class="fas fa-list me-2"></i>Call Log:</h6>
+                                    <div id="callLogContent" class="small text-dark"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Left Panel - Live Conversation -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="text-dark"><i class="fas fa-comments me-2"></i>Live Conversation</h5>
+                        <div class="float-end">
+                            <span class="badge bg-primary" id="talkTimeRatio">0% You</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="conversationLog" class="conversation-log">
+                            <div class="text-center text-muted p-4">
+                                <i class="fas fa-microphone fa-2x mb-3"></i>
+                                <p>Click "Start Web Demo" above to begin real-time browser-based coaching</p>
+                                <small class="text-muted">This is for in-browser testing, not phone calls</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - AI Coaching -->
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5><i class="fas fa-robot me-2"></i>AI Sales Coach</h5>
+                        <div class="float-end">
+                            <span id="coachingScore" class="badge bg-light text-dark">Score: --</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Real-time Coaching Panel -->
+                        <div id="coachingPanel" class="coaching-panel">
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>AI Coach Ready!</strong> Start your web demo to receive real-time coaching insights.
+                            </div>
+                        </div>
+
+                        <!-- Quick Action Buttons -->
+                        <div class="mt-3">
+                            <h6 class="text-dark">Quick Actions</h6>
+                            <div class="btn-group-vertical w-100" role="group">
+                                <button class="btn btn-outline-primary btn-sm" id="discoveryBtn">
+                                    <i class="fas fa-search me-1"></i>Discovery Question
+                                </button>
+                                <button class="btn btn-outline-success btn-sm" id="valueBtn">
+                                    <i class="fas fa-trophy me-1"></i>Articulate Value
+                                </button>
+                                <button class="btn btn-outline-warning btn-sm" id="objectionBtn">
+                                    <i class="fas fa-shield-alt me-1"></i>Handle Objection
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Battle Cards Section -->
+                        <div id="battleCardsSection" class="mt-3" style="display: none;">
+                            <h6 class="text-dark">Competitor Intelligence</h6>
+                            <div id="battleCards"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel - Call Metrics & CRM -->
+        <div class="row mt-3">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="text-dark mb-0"><i class="fas fa-chart-bar me-2"></i>Live Call Metrics</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-2">
+                                <div class="metric-card">
+                                    <h4 id="callDuration" class="text-primary">00:00</h4>
+                                    <small class="text-dark">Duration</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="metric-card">
+                                    <h4 id="questionsAsked" class="text-info">0</h4>
+                                    <small class="text-dark">Questions</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="metric-card">
+                                    <h4 id="objections" class="text-warning">0</h4>
+                                    <small class="text-dark">Objections</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="metric-card">
+                                    <h4 id="buyingSignals" class="text-success">0</h4>
+                                    <small class="text-dark">Buy Signals</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="metric-card">
+                                    <h4 id="sentimentScore" class="text-secondary">😐</h4>
+                                    <small class="text-dark">Mood</small>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="metric-card">
+                                    <h4 id="dealRisk" class="text-danger">Medium</h4>
+                                    <small class="text-dark">Risk Level</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h6 class="text-dark mb-0"><i class="fas fa-database me-2"></i>CRM Integration</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <button class="btn btn-outline-primary btn-sm" id="syncCrmBtn">
+                            <i class="fas fa-sync me-1"></i>Sync to CRM
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" id="generateSummaryBtn">
+                            <i class="fas fa-file-alt me-1"></i>Generate Summary
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Player for TTS -->
+    <audio id="audioPlayer" controls style="display: none;"></audio>
+
+    <!-- Modals -->
+    <div class="modal fade" id="sessionSummaryModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Call Summary</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="summaryContent">
+                    <!-- Summary content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="exportSummaryBtn">Export to CRM</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+    <script>
+        // Initialize Sales Copilot
+        document.addEventListener('DOMContentLoaded', function() {
+            window.voiceAI = new VoiceAIInterface('sales');
+            
+            // Phone Testing Functionality
+            initPhoneTesting();
+        });
+        
+        function initPhoneTesting() {
+            const makeB2BCallBtn = document.getElementById('makeB2BCallBtn');
+            const callStatus = document.getElementById('callStatus');
+            const callStatusText = document.getElementById('callStatusText');
+            const callLog = document.getElementById('callLog');
+            const callLogContent = document.getElementById('callLogContent');
+            
+            // B2B Sales Call
+            makeB2BCallBtn.addEventListener('click', async function() {
+                const phoneNumber = document.getElementById('phoneNumber').value;
+                const leadName = document.getElementById('leadName').value;
+                const leadCompany = document.getElementById('leadCompany').value;
+                
+                if (!phoneNumber || !leadName) {
+                    alert('Please enter phone number and lead name');
+                    return;
+                }
+                
+                await makePhoneCall('b2b_sales', phoneNumber, leadName, leadCompany);
+            });
+            
+            async function makePhoneCall(callType, phoneNumber, leadName, extra) {
+                // Show status
+                callStatus.style.display = 'block';
+                callStatusText.textContent = 'Initiating call...';
+                callLog.style.display = 'block';
+                
+                // Disable button
+                makeB2BCallBtn.disabled = true;
+                
+                try {
+                    // Prepare request data
+                    const requestData = {
+                        phone_number: phoneNumber,
+                        call_type: callType,
+                        lead_info: {
+                            name: leadName
+                        }
+                    };
+                    
+                    if (callType === 'b2b_sales' && extra) {
+                        requestData.lead_info.company = extra;
+                    }
+                    
+                    logCall(`📞 Initiating ${callType} call to ${phoneNumber}...`);
+                    
+                    // Make API call
+                    const response = await fetch('/api/phone/call', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        callStatusText.textContent = '✅ Call initiated successfully!';
+                        callStatusText.className = 'text-success';
+                        logCall(`✅ Call initiated! SID: ${result.call_sid}`);
+                        logCall(`📱 Your phone should ring in a few seconds...`);
+                        logCall(`🤖 Agent will introduce themselves and start conversation`);
+                        logCall(`💬 Speak naturally - AI understands English, Hindi, Telugu`);
+                        
+                        // Poll call status
+                        pollCallStatus(result.call_sid);
+                    } else {
+                        callStatusText.textContent = '❌ Call failed: ' + (result.error || result.detail);
+                        callStatusText.className = 'text-danger';
+                        logCall(`❌ Error: ${result.error || result.detail}`);
+                        
+                        // Re-enable button
+                        setTimeout(() => {
+                            makeB2BCallBtn.disabled = false;
+                        }, 3000);
+                    }
+                    
+                } catch (error) {
+                    callStatusText.textContent = '❌ Error: ' + error.message;
+                    callStatusText.className = 'text-danger';
+                    logCall(`❌ Error: ${error.message}`);
+                    
+                    // Re-enable button
+                    setTimeout(() => {
+                        makeB2BCallBtn.disabled = false;
+                    }, 3000);
+                }
+            }
+            
+            async function pollCallStatus(callSid) {
+                const interval = setInterval(async () => {
+                    try {
+                        const response = await fetch(`/api/phone/call/${callSid}`);
+                        const result = await response.json();
+                        
+                        if (result.status) {
+                            logCall(`📊 Call Status: ${result.status}`);
+                            
+                            if (result.status === 'completed' || result.status === 'failed' || result.status === 'busy' || result.status === 'no-answer') {
+                                clearInterval(interval);
+                                callStatusText.textContent = `Call ${result.status}`;
+                                
+                                if (result.status === 'completed') {
+                                    logCall(`✅ Call completed! Duration: ${result.duration}s`);
+                                } else {
+                                    logCall(`❌ Call ${result.status}`);
+                                }
+                                
+                                // Re-enable button
+                                makeB2BCallBtn.disabled = false;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Status poll error:', error);
+                    }
+                }, 3000); // Poll every 3 seconds
+            }
+            
+            function logCall(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = 'mb-1';
+                logEntry.innerHTML = `<span class="text-muted">[${timestamp}]</span> ${message}`;
+                callLogContent.appendChild(logEntry);
+                callLogContent.scrollTop = callLogContent.scrollHeight;
+            }
+        }
+    </script>
+</body>
+</html>
