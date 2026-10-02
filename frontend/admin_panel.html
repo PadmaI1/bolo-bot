@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ platform_name }} - Voice AI Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-microphone-alt me-2"></i>{{ platform_name }}
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text">
+                    <i class="fas fa-circle text-success me-1"></i>System Online
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-12">
+                <div class="text-center mb-5">
+                    <h1 class="display-4 mb-3">🎙️ Voice AI Platform</h1>
+                    <p class="lead">Multi-industry voice intelligence powered by Azure OpenAI & Murf AI</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row justify-content-center">
+            <!-- Sales Copilot Card -->
+            <div class="col-lg-5 col-md-6 mb-4">
+                <div class="card h-100 shadow-lg industry-card" onclick="window.location.href='/sales'">
+                    <div class="card-header bg-primary text-white text-center">
+                        <i class="fas fa-chart-line fa-2x mb-2"></i>
+                        <h4>B2B Sales Copilot</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">Real-time Sales Coaching</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Live conversation analysis</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Competitor battle cards</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Objection handling scripts</li>
+                            <li><i class="fas fa-check text-success me-2"></i>CRM auto-sync</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Deal progression tracking</li>
+                        </ul>
+                        <div class="mt-3">
+                            <span class="badge bg-success me-2">Azure OpenAI</span>
+                            <span class="badge bg-info">Voice Coaching</span>
+                        </div>
+                    </div>
+                    <div class="card-footer text-center">
+                        <button class="btn btn-primary btn-lg">
+                            <i class="fas fa-play me-2"></i>Launch Sales Copilot
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real Estate Agent Card -->
+            <div class="col-lg-5 col-md-6 mb-4">
+                <div class="card h-100 shadow-lg industry-card" onclick="window.location.href='/real-estate'">
+                    <div class="card-header bg-success text-white text-center">
+                        <i class="fas fa-home fa-2x mb-2"></i>
+                        <h4>Real Estate Agent</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">Automated Lead Qualification</h5>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success me-2"></i>Voice lead qualification</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Property matching & recommendations</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Site visit scheduling</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Multi-language support</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Investment analysis</li>
+                        </ul>
+                        <div class="mt-3">
+                            <span class="badge bg-warning me-2">Murf AI Voices</span>
+                            <span class="badge bg-info">Hindi + English</span>
+                        </div>
+                    </div>
+                    <div class="card-footer text-center">
+                        <button class="btn btn-success btn-lg">
+                            <i class="fas fa-play me-2"></i>Launch Real Estate AI
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Statistics -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar me-2"></i>Platform Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-primary" id="totalSessions">0</h3>
+                                    <p>Total Sessions</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-success" id="activeSessions">0</h3>
+                                    <p>Active Now</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-info" id="avgDuration">0min</h3>
+                                    <p>Avg Duration</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-item">
+                                    <h3 class="text-warning" id="voiceQuality">9.2/10</h3>
+                                    <p>Voice Quality</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technology Stack -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-cogs me-2"></i>Powered By</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="tech-item">
+                                    <i class="fab fa-microsoft fa-2x text-primary mb-2"></i>
+                                    <h6>Azure OpenAI</h6>
+                                    <small>GPT-4 & Whisper</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="tech-item">
+                                    <i class="fas fa-volume-up fa-2x text-warning mb-2"></i>
+                                    <h6>Murf AI</h6>
+                                    <small>Natural Indian Voices</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="tech-item">
+                                    <i class="fab fa-python fa-2x text-success mb-2"></i>
+                                    <h6>FastAPI</h6>
+                                    <small>High Performance Backend</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="tech-item">
+                                    <i class="fas fa-microphone fa-2x text-info mb-2"></i>
+                                    <h6>WebRTC</h6>
+                                    <small>Real-time Audio</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load platform statistics
+        async function loadStatistics() {
+            try {
+                const response = await fetch('/api/analytics/dashboard');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('totalSessions').textContent = data.analytics.total_sessions;
+                    document.getElementById('activeSessions').textContent = data.analytics.active_sessions;
+                    document.getElementById('avgDuration').textContent = data.analytics.avg_session_duration;
+                    document.getElementById('voiceQuality').textContent = data.analytics.voice_quality_score;
+                }
+            } catch (error) {
+                console.error('Failed to load statistics:', error);
+            }
+        }
+
+        // Load statistics on page load and refresh every 30 seconds
+        loadStatistics();
+        setInterval(loadStatistics, 30000);
+
+        // Add click animations to industry cards
+        document.querySelectorAll('.industry-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>
