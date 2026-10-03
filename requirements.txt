@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+websockets
+python-dotenv
+openai
+aiohttp
+pydantic
+jinja2
+python-multipart
+asyncio
+numpy
+scipy
+librosa
+soundfile
+simple-salesforce
+pytz
+twilio
