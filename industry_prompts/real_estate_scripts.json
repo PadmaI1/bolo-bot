@@ -1,0 +1,199 @@
+{
+  "lead_qualification_scripts": {
+    "welcome_messages": {
+      "english": {
+        "first_time_caller": "Hello! Thank you for calling about our properties. I'm here to help you find the perfect home. May I know what type of property you're looking for?",
+        "returning_inquirer": "Welcome back! I remember you were interested in properties in [AREA]. Have you had a chance to think about what we discussed?",
+        "referral_lead": "Hi! [REFERRER NAME] mentioned you might be interested in properties. I'd love to help you find something perfect for your needs."
+      },
+      "hindi": {
+        "first_time_caller": "नमस्ते! हमारी प्रॉपर्टीज के बारे में कॉल करने के लिए धन्यवाद। मैं आपको सबसे अच्छा घर खोजने में मदद करने के लिए यहां हूं। क्या मैं जान सकता हूं कि आप किस प्रकार की संपत्ति की तलाश कर रहे हैं?",
+        "returning_inquirer": "दोबारा आपका स्वागत है! मुझे याद है कि आप [AREA] में प्रॉपर्टीज में रुचि रखते थे। क्या आपको हमारी चर्चा के बारे में सोचने का मौका मिला है?",
+        "referral_lead": "हैलो! [REFERRER NAME] ने बताया कि आप प्रॉपर्टीज में रुचि रख सकते हैं। मैं आपकी जरूरतों के लिए कुछ परफेक्ट खोजने में मदद करना चाहूंगा।"
+      }
+    },
+    
+    "qualification_questions": {
+      "budget_discovery": {
+        "english": [
+          "What budget range are you considering for this property purchase?",
+          "Have you been pre-approved for a home loan, or will you need assistance with financing?",
+          "What monthly EMI would be comfortable for your family budget?",
+          "Are you planning a cash purchase or would you prefer financing options?",
+          "What's your target price range, and is there any flexibility in your budget?"
+        ],
+        "hindi": [
+          "इस प्रॉपर्टी खरीदारी के लिए आप किस बजट रेंज पर विचार कर रहे हैं?",
+          "क्या आपका होम लोन प्री-अप्रूव्ड है, या फिनांसिंग के लिए सहायता की जरूरत होगी?",
+          "आपके पारिवारिक बजट के लिए कौन सा मासिक EMI आरामदायक होगा?",
+          "क्या आप कैश पेमेंट की योजना बना रहे हैं या फिनांसिंग ऑप्शन पसंद करेंगे?",
+          "आपकी लक्षित कीमत सीमा क्या है, और क्या आपके बजट में कोई लचीलापन है?"
+        ]
+      },
+      
+      "location_preferences": {
+        "english": [
+          "Which areas or localities are you considering, and what's important to you about the location?",
+          "Do you have any specific preferences regarding proximity to your workplace or children's schools?",
+          "Are you looking for established areas or would you consider upcoming localities with growth potential?",
+          "What factors are most important for your location choice - connectivity, amenities, or investment potential?",
+          "Do you have any location constraints or specific requirements for the neighborhood?"
+        ],
+        "hindi": [
+          "आप किन क्षेत्रों या इलाकों पर विचार कर रहे हैं, और लोकेशन के बारे में आपके लिए क्या महत्वपूर्ण है?",
+          "क्या आपकी कार्यस्थल या बच्चों के स्कूल की निकटता के बारे में कोई विशिष्ट प्राथमिकताएं हैं?",
+          "क्या आप स्थापित क्षेत्रों की तलाश कर रहे हैं या विकास की संभावना वाले आगामी इलाकों पर विचार करेंगे?",
+          "आपकी लोकेशन पसंद के लिए कौन से कारक सबसे महत्वपूर्ण हैं - कनेक्टिविटी, सुविधाएं, या निवेश की संभावना?",
+          "क्या आपकी कोई लोकेशन बाध्यताएं हैं या पड़ोस के लिए विशिष्ट आवश्यकताएं हैं?"
+        ]
+      },
+      
+      "property_requirements": {
+        "english": [
+          "What type of property are you looking for - apartment, villa, or independent house?",
+          "How many bedrooms and bathrooms would be ideal for your family?",
+          "What size or carpet area are you considering for the property?",
+          "Are there any specific amenities that are must-haves for your family?",
+          "Do you prefer ready-to-move properties or are you open to under-construction projects?"
+        ],
+        "hindi": [
+          "आप किस प्रकार की संपत्ति की तलाश कर रहे हैं - अपार्टमेंट, विला, या इंडिपेंडेंट हाउस?",
+          "आपके परिवार के लिए कितने बेडरूम और बाथरूम आदर्श होंगे?",
+          "आप प्रॉपर्टी के लिए किस साइज या कारपेट एरिया पर विचार कर रहे हैं?",
+          "क्या कोई विशिष्ट सुविधाएं हैं जो आपके परिवार के लिए जरूरी हैं?",
+          "क्या आप रेडी-टू-मूव प्रॉपर्टीज पसंद करते हैं या अंडर-कंस्ट्रक्शन प्रोजेक्ट्स के लिए खुले हैं?"
+        ]
+      },
+      
+      "timeline_urgency": {
+        "english": [
+          "When are you planning to make this property purchase?",
+          "Is there any specific timeline or deadline driving your property search?",
+          "Are you currently renting, and when would your lease be up for renewal?",
+          "When would you ideally like to move into your new home?",
+          "What factors might accelerate or delay your property purchase decision?"
+        ],
+        "hindi": [
+          "आप इस प्रॉपर्टी खरीदारी की योजना कब बना रहे हैं?",
+          "क्या कोई विशिष्ट समयसीमा या डेडलाइन है जो आपकी प्रॉपर्टी सर्च को प्रेरित कर रही है?",
+          "क्या आप वर्तमान में किराए पर रह रहे हैं, और आपका लीज रिन्यूअल कब होगा?",
+          "आप आदर्श रूप से अपने नए घर में कब जाना चाहेंगे?",
+          "कौन से कारक आपकी प्रॉपर्टी खरीदारी के फैसले को तेज़ या देर से कर सकते हैं?"
+        ]
+      }
+    },
+    
+    "objection_handling": {
+      "price_objections": {
+        "english": {
+          "too_expensive": {
+            "response": "I understand price is a key consideration. Let me show you the total value proposition including location advantages, amenities, and long-term appreciation potential. We also have flexible payment plans that might work better for your budget.",
+            "follow_up": "What specific price range would feel more comfortable for you? Let me see if we have options that might fit better."
+          },
+          "budget_constraints": {
+            "response": "Budget planning is crucial for such an important decision. Let's look at this as an investment - with EMI options and property appreciation, it often becomes more affordable than renting long-term. Plus, we have several financing partners who can offer competitive rates.",
+            "follow_up": "Would you like me to arrange a meeting with our financing consultant to explore options that work within your budget?"
+          }
+        },
+        "hindi": {
+          "too_expensive": {
+            "response": "मैं समझता हूं कि कीमत एक मुख्य विचारणीय बात है। मैं आपको लोकेशन के फायदे, सुविधाएं, और दीर्घकालीन मूल्य वृद्धि की संभावना सहित कुल वैल्यू प्रपोज़िशन दिखाता हूं। हमारे पास लचीली भुगतान योजनाएं भी हैं जो आपके बजट के लिए बेहतर हो सकती हैं।",
+            "follow_up": "कौन सी विशिष्ट कीमत सीमा आपके लिए अधिक आरामदायक होगी? मैं देखता हूं कि क्या हमारे पास कोई ऑप्शन हैं जो बेहतर फिट हो सकें।"
+          },
+          "budget_constraints": {
+            "response": "ऐसे महत्वपूर्ण निर्णय के लिए बजट योजना महत्वपूर्ण है। आइए इसे एक निवेश के रूप में देखें - EMI विकल्पों और प्रॉपर्टी एप्रिसिएशन के साथ, यह अक्सर लंबी अवधि के किराए से अधिक किफायती हो जाता है। इसके अलावा, हमारे कई फाइनेंसिंग पार्टनर हैं जो प्रतिस्पर्धी दरें दे सकते हैं।",
+            "follow_up": "क्या आप चाहेंगे कि मैं आपके बजट में काम करने वाले विकल्पों का पता लगाने के लिए हमारे फाइनेंसिंग कंसल्टेंट के साथ एक मीटिंग की व्यवस्था करूं?"
+          }
+        }
+      },
+      
+      "location_concerns": {
+        "english": {
+          "too_far": {
+            "response": "Location and connectivity are definitely important factors. This area is actually well-connected with [specific transport options]. Plus, the upcoming infrastructure projects like [project names] will significantly improve connectivity. Many of our residents find the commute quite manageable.",
+            "follow_up": "Would you like me to arrange a site visit so you can experience the connectivity firsthand and see the upcoming developments?"
+          },
+          "unfamiliar_area": {
+            "response": "I completely understand your hesitation about a new area. This location is rapidly developing with excellent infrastructure and amenities being added. The property values here have shown consistent growth, and we're seeing many families from established areas choosing to move here.",
+            "follow_up": "Let me share some market data about this area's growth potential and arrange for you to speak with current residents about their experience."
+          }
+        },
+        "hindi": {
+          "too_far": {
+            "response": "लोकेशन और कनेक्टिविटी निश्चित रूप से महत्वपूर्ण कारक हैं। यह क्षेत्र वास्तव में [विशिष्ट परिवहन विकल्प] के साथ अच्छी तरह जुड़ा हुआ है। इसके अलावा, आगामी इंफ्रास्ट्रक्चर प्रोजेक्ट्स जैसे [प्रोजेक्ट नाम] कनेक्टिविटी में काफी सुधार लाएंगे। हमारे कई निवासी कम्यूट को काफी manageable पाते हैं।",
+            "follow_up": "क्या आप चाहेंगे कि मैं साइट विजिट की व्यवस्था करूं ताकि आप कनेक्टिविटी को खुद महसूस कर सकें और आगामी विकास देख सकें?"
+          },
+          "unfamiliar_area": {
+            "response": "मैं नए क्षेत्र के बारे में आपकी झिझक को पूरी तरह समझता हूं। यह लोकेशन तेजी से विकसित हो रही है और उत्कृष्ट इंफ्रास्ट्रक्चर और सुविधाएं जोड़ी जा रही हैं। यहां की प्रॉपर्टी वैल्यूज में लगातार वृद्धि दिखी है, और हम देख रहे हैं कि स्थापित क्षेत्रों के कई परिवार यहां आने का चुनाव कर रहे हैं।",
+            "follow_up": "मैं इस क्षेत्र की विकास संभावनाओं के बारे में कुछ बाजार डेटा साझा करता हूं और आपको वर्तमान निवासियों के साथ उनके अनुभव के बारे में बात करने की व्यवस्था करता हूं।"
+          }
+        }
+      }
+    },
+    
+    "closing_techniques": {
+      "urgency_creation": {
+        "english": [
+          "We currently have only 3 units left in this price range, and there's been significant interest this week.",
+          "Property prices in this area have increased by 12% in the last 6 months, so securing at today's price makes financial sense.",
+          "The builder is planning a price revision next month, so this might be the best time to lock in your preferred unit.",
+          "With the upcoming infrastructure projects, we expect property values to appreciate significantly next year."
+        ],
+        "hindi": [
+          "वर्तमान में हमारे पास इस प्रिस रेंज में केवल 3 यूनिट्स बची हैं, और इस सप्ताह काफी रुचि दिखाई गई है।",
+          "इस क्षेत्र में प्रॉपर्टी की कीमतें पिछले 6 महीनों में 12% बढ़ी हैं, इसलिए आज की कीमत पर सुरक्षित करना वित्तीय रूप से समझदारी है।",
+          "बिल्डर अगले महीने प्रिस रिवीजन की योजना बना रहा है, इसलिए यह आपकी पसंदीदा यूनिट को लॉक करने का सबसे अच्छा समय हो सकता है।",
+          "आगामी इंफ्रास्ट्रक्चर प्रोजेक्ट्स के साथ, हमें उम्मीद है कि अगले साल प्रॉपर्टी वैल्यूज में काफी वृद्धि होगी।"
+        ]
+      },
+      
+      "value_reinforcement": {
+        "english": [
+          "This property offers excellent value with premium amenities, strategic location, and strong appreciation potential.",
+          "You're not just buying a home, you're investing in your family's future and building long-term wealth.",
+          "Compared to similar properties in the area, this offers the best combination of quality, location, and price.",
+          "With our flexible payment plans and financing options, owning this property is more affordable than you might think."
+        ],
+        "hindi": [
+          "यह प्रॉपर्टी प्रीमियम सुविधाओं, रणनीतिक स्थान, और मजबूत एप्रिसिएशन संभावना के साथ उत्कृष्ट वैल्यू प्रदान करती है।",
+          "आप सिर्फ एक घर नहीं खरीद रहे, आप अपने परिवार के भविष्य में निवेश कर रहे हैं और दीर्घकालिक संपत्ति बना रहे हैं।",
+          "इस क्षेत्र की समान प्रॉपर्टीज की तुलना में, यह गुणवत्ता, स्थान और कीमत का सबसे अच्छा संयोजन प्रदान करती है।",
+          "हमारी लचीली भुगतान योजनाओं और फाइनेंसिंग विकल्पों के साथ, इस प्रॉपर्टी का मालिक होना आपकी सोच से अधिक किफायती है।"
+        ]
+      }
+    }
+  },
+  
+  "lead_scoring_criteria": {
+    "budget_qualification": {
+      "disclosed_specific_range": 25,
+      "disclosed_approximate_range": 20,
+      "mentioned_financing_ready": 15,
+      "mentioned_cash_buyer": 30,
+      "no_budget_discussion": 0
+    },
+    
+    "timeline_urgency": {
+      "immediate_1_month": 30,
+      "within_3_months": 25,
+      "within_6_months": 20,
+      "within_1_year": 15,
+      "just_exploring": 5
+    },
+    
+    "engagement_level": {
+      "asking_detailed_questions": 15,
+      "requesting_site_visit": 20,
+      "asking_about_documentation": 15,
+      "discussing_family_requirements": 10,
+      "showing_price_sensitivity": -5
+    },
+    
+    "decision_authority": {
+      "sole_decision_maker": 20,
+      "joint_with_spouse": 15,
+      "family_decision_involved": 10,
+      "needs_multiple_approvals": 5
+    }
+  }
+}

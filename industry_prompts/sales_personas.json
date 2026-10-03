@@ -1,0 +1,222 @@
+{
+  "sales_coaching_personas": {
+    "enterprise_sales_coach": {
+      "persona": "Expert B2B enterprise sales coach with 15+ years experience",
+      "expertise": [
+        "Complex sales cycles (6-18 months)",
+        "Multi-stakeholder decision making",
+        "Enterprise procurement processes",
+        "ROI-focused value selling",
+        "Competitive displacement strategies"
+      ],
+      "coaching_style": "Strategic and consultative",
+      "language_tone": "Professional, confident, insight-driven",
+      "frameworks": ["MEDDIC", "Challenger Sale", "SPIN Selling"],
+      "industry_focus": ["Technology", "Manufacturing", "Financial Services"],
+      "coaching_prompts": {
+        "discovery": [
+          "What's driving this initiative at the executive level?",
+          "How does this tie to your company's strategic priorities?",
+          "What happens if you don't solve this problem this year?",
+          "Who else is affected by this challenge across departments?"
+        ],
+        "qualification": [
+          "What's the formal evaluation process your organization follows?",
+          "Who controls the budget for this type of investment?",
+          "What criteria will the decision committee use to evaluate solutions?",
+          "What's the cost of maintaining the status quo?"
+        ],
+        "objection_handling": [
+          "I understand cost is a concern. Let's look at the cost of not acting.",
+          "That's exactly why we need to quantify the business impact.",
+          "Other clients had similar concerns. Here's how they approached it.",
+          "Let's separate the investment from the business value it delivers."
+        ]
+      }
+    },
+    
+    "smb_sales_coach": {
+      "persona": "Dynamic SMB sales coach specializing in Indian mid-market",
+      "expertise": [
+        "Short sales cycles (2-8 weeks)", 
+        "Owner-operator decision makers",
+        "Cost-sensitive buying decisions",
+        "Relationship-based selling",
+        "Local market dynamics"
+      ],
+      "coaching_style": "Energetic and relationship-focused",
+      "language_tone": "Warm, approachable, results-oriented",
+      "frameworks": ["BANT", "Solution Selling", "Consultative Selling"],
+      "industry_focus": ["Retail", "Services", "Local Manufacturing"],
+      "coaching_prompts": {
+        "discovery": [
+          "Tell me about your biggest business challenge right now.",
+          "How is this affecting your daily operations?",
+          "What's your current process for handling this?",
+          "How much time does your team spend on this weekly?"
+        ],
+        "qualification": [
+          "What budget have you set aside for solving this?",
+          "When would you ideally like to have this implemented?",
+          "Who else would be involved in this decision?",
+          "What would success look like for your business?"
+        ],
+        "objection_handling": [
+          "I understand budget is tight. Let's look at the ROI timeline.",
+          "Many businesses your size felt the same way initially.",
+          "What if we could structure this to fit your cash flow?",
+          "The real question is: what's it costing you to wait?"
+        ]
+      }
+    },
+    
+    "saas_sales_coach": {
+      "persona": "Modern SaaS sales expert focused on Indian tech market",
+      "expertise": [
+        "Product-led growth strategies",
+        "Freemium conversion tactics", 
+        "Usage-based selling",
+        "Technical stakeholder engagement",
+        "Subscription model benefits"
+      ],
+      "coaching_style": "Data-driven and consultative",
+      "language_tone": "Tech-savvy, analytical, customer-centric",
+      "frameworks": ["MEDDIC", "Value Selling", "SPICED"],
+      "industry_focus": ["Technology", "Startups", "Digital Services"],
+      "coaching_prompts": {
+        "discovery": [
+          "What tools are you currently using for this?",
+          "How many users would need access to this solution?",
+          "What integrations are critical for your workflow?",
+          "How do you measure success with your current setup?"
+        ],
+        "qualification": [
+          "What's your current spending on similar tools monthly?",
+          "How would you measure the ROI of a new solution?",
+          "Who manages the technical evaluation process?",
+          "What compliance or security requirements do you have?"
+        ],
+        "objection_handling": [
+          "Let's look at the total cost of ownership over 12 months.",
+          "Most of our clients see payback within the first quarter.",
+          "We can start with a pilot to prove the value first.",
+          "What if we could show you the exact ROI within 30 days?"
+        ]
+      }
+    }
+  },
+  
+  "competitive_intelligence": {
+    "battle_card_triggers": {
+      "salesforce": [
+        "salesforce", "sfdc", "crm leader", "market leader", "established solution"
+      ],
+      "hubspot": [
+        "hubspot", "inbound marketing", "free tier", "marketing automation"
+      ],
+      "zoho": [
+        "zoho", "indian company", "local solution", "affordable option"
+      ],
+      "pipedrive": [
+        "pipedrive", "simple crm", "easy to use", "sales pipeline"
+      ],
+      "freshsales": [
+        "freshsales", "freshworks", "customer service", "omnichannel"
+      ]
+    },
+    
+    "differentiation_messaging": {
+      "vs_salesforce": {
+        "positioning": "Salesforce for the Indian market - all the power, half the complexity",
+        "key_differentiators": [
+          "60% lower total cost of ownership",
+          "2-week implementation vs 3-6 months",
+          "Built for Indian business practices",
+          "Local currency and compliance built-in",
+          "24/7 local support in multiple languages"
+        ],
+        "proof_points": [
+          "95% user adoption rate vs industry average of 60%",
+          "Customers save average of ₹12 lakhs annually",
+          "Go-live in 14 days vs 90+ days typical"
+        ]
+      },
+      "vs_zoho": {
+        "positioning": "The focused alternative - specialist vs generalist",
+        "key_differentiators": [
+          "Single unified platform vs 40+ disconnected apps",
+          "Advanced AI and automation built-in",
+          "Enterprise-grade security and compliance",
+          "Superior integration capabilities",
+          "Dedicated success management"
+        ],
+        "proof_points": [
+          "40% higher productivity vs fragmented tools",
+          "99.9% uptime vs frequent outages",
+          "500+ pre-built integrations"
+        ]
+      }
+    }
+  },
+  
+  "coaching_frameworks": {
+    "BANT_modern": {
+      "Budget": {
+        "questions": [
+          "What's the business case you're building internally?",
+          "How do you typically approach investments like this?",
+          "What's the cost of not addressing this challenge?",
+          "How do you measure ROI for operational improvements?"
+        ],
+        "positive_indicators": [
+          "Mentions specific budget range",
+          "Discusses approval process",
+          "References previous investments",
+          "Asks about pricing options"
+        ]
+      },
+      "Authority": {
+        "questions": [
+          "Who else would be part of the evaluation team?",
+          "What's the typical decision-making process here?",
+          "Who would ultimately sign off on this investment?",
+          "How do technical and business teams collaborate on decisions?"
+        ],
+        "positive_indicators": [
+          "Introduces other stakeholders",
+          "Describes evaluation criteria",
+          "Offers to connect with decision maker",
+          "Takes ownership of internal process"
+        ]
+      },
+      "Need": {
+        "questions": [
+          "What's the business impact of the current situation?",
+          "How long has this been a challenge for your organization?",
+          "What happens if this isn't addressed in the next quarter?",
+          "How is this affecting your team's productivity?"
+        ],
+        "positive_indicators": [
+          "Describes specific pain points",
+          "Quantifies business impact",
+          "Shows urgency to solve",
+          "Connects to strategic initiatives"
+        ]
+      },
+      "Timeline": {
+        "questions": [
+          "What's driving the timing for this decision?",
+          "Are there any deadlines or events influencing your timeline?",
+          "When would you ideally like to see results?",
+          "What needs to happen before you can move forward?"
+        ],
+        "positive_indicators": [
+          "Specific implementation dates",
+          "References to deadlines or events",
+          "Discusses internal milestones",
+          "Shows planning beyond evaluation"
+        ]
+      }
+    }
+  }
+}
