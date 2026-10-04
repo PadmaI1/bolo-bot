@@ -153,8 +153,12 @@ Example tone: "Hello! Am I speaking with {lead_name}? Hi, this is {persona['name
 
 Generate opening:"""
         
-        # Get AI response
-        opening_text = await self.azure_service.generate_text(prompt)
+        # Get AI response - Convert to message array format
+        messages = [
+            {"role": "system", "content": f"You are {persona['name']}, {persona['role']} at {persona['company']}. Generate natural, conversational phone call openings."},
+            {"role": "user", "content": prompt}
+        ]
+        opening_text = await self.azure_service.generate_text(messages)
         opening_text = opening_text.strip()
         
         # Detect language and select voice
@@ -247,7 +251,12 @@ Return as JSON:
     "language": "en"
 }}"""
         
-        analysis_text = await self.azure_service.generate_text(prompt)
+        # Convert to message array format
+        messages = [
+            {"role": "system", "content": "You are a conversation analyzer. Return only valid JSON format with no additional text."},
+            {"role": "user", "content": prompt}
+        ]
+        analysis_text = await self.azure_service.generate_text(messages)
         
         try:
             # Extract JSON from response
@@ -350,8 +359,12 @@ Generate your response as {persona['name']}:
 
 Response:"""
         
-        # Generate AI response
-        response_text = await self.azure_service.generate_text(system_context)
+        # Generate AI response - Convert to message array format
+        messages = [
+            {"role": "system", "content": f"You are {persona['name']}, {persona['role']} at {persona['company']}. Generate natural, conversational phone responses."},
+            {"role": "user", "content": system_context}
+        ]
+        response_text = await self.azure_service.generate_text(messages)
         response_text = response_text.strip()
         
         # Detect language and select voice

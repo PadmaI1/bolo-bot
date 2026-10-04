@@ -289,8 +289,13 @@ class ConversationAI:
         """
         
         try:
-            result = await self.azure_service.generate_completion(
-                analysis_prompt,
+            # Convert to message array format and use correct method name
+            messages = [
+                {"role": "system", "content": "You are a sales conversation analyzer. Return only valid JSON format."},
+                {"role": "user", "content": analysis_prompt}
+            ]
+            result = await self.azure_service.generate_text(
+                messages,
                 max_tokens=200,
                 temperature=0.3
             )
