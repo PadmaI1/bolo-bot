@@ -119,14 +119,68 @@ class PreGeneratedResponse:
 
 
 class VoicePredictor:
-    """Pre-generate common responses for instant playback"""
+    """Pre-generate common responses for instant playback with smart rate limiting"""
     
-    def __init__(self, murf_service):
+    def __init__(self, murf_service, rate_limiter=None):
         self.murf_service = murf_service
+        self.rate_limiter = rate_limiter
         self.logger = logging.getLogger(__name__)
         self.cache: Dict[str, PreGeneratedResponse] = {}
         
-        # Common responses by agent type and language
+        # PRIORITY-BASED responses - High priority first, then medium
+        # High priority: Most common responses (generate first)
+        self.high_priority_responses = {
+            "b2b_sales": {
+                "en": [
+                    "That's a great question! Let me explain how that works.",
+                    "I completely understand your concern. Here's what we can do.",
+                    "Absolutely! Murf AI offers exactly what you're looking for.",
+                ],
+                "hi": [
+                    "बहुत अच्छा सवाल! मैं आपको समझाता हूं।",
+                    "मैं आपकी चिंता समझता हूं। हम यह कर सकते हैं।",
+                ]
+            },
+            "real_estate": {
+                "en": [
+                    "Perfect! I have some properties that match your needs.",
+                    "Excellent choice! Let me show you some perfect options.",
+                    "That budget range works well. Let me show you options.",
+                ],
+                "hi": [
+                    "बिल्कुल! मेरे पास आपकी ज़रूरत की प्रॉपर्टी है।",
+                    "बढ़िया चुनाव! मैं आपको अच्छे विकल्प दिखाता हूं।",
+                ]
+            }
+        }
+        
+        # Medium priority: Less common but still useful (generate after high priority)
+        self.medium_priority_responses = {
+            "b2b_sales": {
+                "en": [
+                    "Great! Let me tell you more about our API capabilities.",
+                    "Perfect! I can definitely help you with that.",
+                    "That makes sense. Here's how we handle that.",
+                ],
+                "hi": [
+                    "बढ़िया! मैं आपको API के बारे में बताता हूं।",
+                    "बिल्कुल! मैं इसमें आपकी मदद कर सकता हूं।",
+                ]
+            },
+            "real_estate": {
+                "en": [
+                    "Great! Let me tell you about the location benefits.",
+                    "I can definitely help you find the right property.",
+                    "I understand exactly what you're looking for.",
+                ],
+                "hi": [
+                    "बढ़िया! मैं आपको लोकेशन के फायदे बताता हूं।",
+                    "मैं समझता हूं कि आप क्या ढूंढ रहे हैं।",
+                ]
+            }
+        }
+        
+        # Keep all responses for reference
         self.common_responses = {
             "b2b_sales": {
                 "en": [
@@ -170,31 +224,120 @@ class VoicePredictor:
         }
     
     async def pregenerate_all_responses(self):
-        """Pre-generate all common responses at startup"""
+        """
+        SMART pre-generation with rate limiting.
+        Generates high-priority responses first with delays to avoid 429 errors.
+        """
         start_time = time.time()
-        self.logger.info("🚀 Pre-generating voice responses for ultra-fast replies...")
+        self.logger.info("🚀 SMART pre-generation starting (rate-limited to avoid 429 errors)...")
         
-        tasks = []
+        success_count = 0
         total_count = 0
         
-        for call_type, languages in self.common_responses.items():
+        # Phase 1: High Priority (Most common responses)
+        self.logger.info("📍 Phase 1: Generating HIGH-PRIORITY responses...")
+        for call_type, languages in self.high_priority_responses.items():
             for language, responses in languages.items():
                 for text in responses:
-                    voice_id = self._get_voice_id(language, call_type)
-                    task = self._generate_and_cache(text, call_type, language, voice_id)
-                    tasks.append(task)
                     total_count += 1
+                    voice_id = self._get_voice_id(language, call_type)
+                    
+                    # Use rate limiter if available
+                    if self.rate_limiter:
+                        await self.rate_limiter.acquire_with_delay(min_delay=2.0)  # 2 second delay
+                    else:
+                        await asyncio.sleep(2.0)  # Fallback delay
+                    
+                    # Generate with retry
+                    success = await self._generate_and_cache_with_retry(
+                        text, call_type, language, voice_id, max_retries=1
+                    )
+                    if success:
+                        success_count += 1
+                        self.logger.info(f"✅ [{success_count}/{total_count}] Cached: {text[:40]}...")
         
-        # Generate all in parallel
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        elapsed_phase1 = time.time() - start_time
+        self.logger.info(
+            f"🎯 Phase 1 complete: {success_count}/{total_count} high-priority responses "
+            f"in {elapsed_phase1:.1f}s"
+        )
         
-        success_count = sum(1 for r in results if r is True)
+        # Phase 2: Medium Priority (Only if Phase 1 had good success rate)
+        if success_count >= len(list(self._flatten_responses(self.high_priority_responses))) * 0.5:
+            self.logger.info("📍 Phase 2: Generating MEDIUM-PRIORITY responses...")
+            await asyncio.sleep(5.0)  # Longer delay before Phase 2
+            
+            phase2_start = len(self.cache)
+            for call_type, languages in self.medium_priority_responses.items():
+                for language, responses in languages.items():
+                    for text in responses:
+                        total_count += 1
+                        voice_id = self._get_voice_id(language, call_type)
+                        
+                        # Use rate limiter with longer delay
+                        if self.rate_limiter:
+                            await self.rate_limiter.acquire_with_delay(min_delay=3.0)  # 3 second delay
+                        else:
+                            await asyncio.sleep(3.0)
+                        
+                        success = await self._generate_and_cache_with_retry(
+                            text, call_type, language, voice_id, max_retries=1
+                        )
+                        if success:
+                            success_count += 1
+                            self.logger.info(f"✅ [{success_count}/{total_count}] Cached: {text[:40]}...")
+            
+            phase2_success = len(self.cache) - phase2_start
+            self.logger.info(f"🎯 Phase 2 complete: {phase2_success} medium-priority responses cached")
+        else:
+            self.logger.warning(
+                f"⚠️ Phase 1 success rate too low ({success_count}/{total_count}), "
+                f"skipping Phase 2"
+            )
+        
         elapsed = time.time() - start_time
-        
         self.logger.info(
             f"✅ Pre-generated {success_count}/{total_count} responses in {elapsed:.1f}s"
         )
         self.logger.info(f"📊 Cache size: {len(self.cache)} responses ready")
+        
+        # Log rate limiter stats if available
+        if self.rate_limiter:
+            stats = self.rate_limiter.get_stats()
+            self.logger.info(f"🚦 Rate limiter: {stats['total_requests']} requests, {stats['total_waits']} waits")
+    
+    def _flatten_responses(self, responses_dict):
+        """Flatten nested response dictionary to count total responses"""
+        for call_type, languages in responses_dict.items():
+            for language, responses in languages.items():
+                for text in responses:
+                    yield text
+    
+    async def _generate_and_cache_with_retry(
+        self,
+        text: str,
+        call_type: str,
+        language: str,
+        voice_id: str,
+        max_retries: int = 1
+    ) -> bool:
+        """Generate and cache with retry logic for resilience"""
+        for attempt in range(max_retries + 1):
+            try:
+                return await self._generate_and_cache(text, call_type, language, voice_id)
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str and attempt < max_retries:
+                    wait_time = (2 ** attempt) * 10  # Exponential backoff: 10s, 20s
+                    self.logger.warning(
+                        f"⏳ 429 error on attempt {attempt + 1}, "
+                        f"waiting {wait_time}s before retry..."
+                    )
+                    await asyncio.sleep(wait_time)
+                else:
+                    self.logger.warning(f"Failed '{text[:30]}...': {e}")
+                    return False
+        return False
     
     async def _generate_and_cache(
         self, 

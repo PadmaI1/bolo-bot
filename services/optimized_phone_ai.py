@@ -41,16 +41,18 @@ class OptimizedPhoneAI:
         self,
         intelligent_phone_ai,
         azure_service,
-        murf_service
+        murf_service,
+        rate_limiter=None
     ):
         self.base_ai = intelligent_phone_ai
         self.azure_service = azure_service
         self.murf_service = murf_service
+        self.rate_limiter = rate_limiter
         self.logger = logging.getLogger(__name__)
         
-        # Initialize optimization components
+        # Initialize optimization components WITH rate limiter
         self.response_cache = ResponseCache(ttl_seconds=300, max_size=1000)
-        self.voice_predictor = VoicePredictor(murf_service)
+        self.voice_predictor = VoicePredictor(murf_service, rate_limiter=rate_limiter)
         self.request_deduplicator = RequestDeduplicator()
         self.parallel_processor = ParallelProcessor(
             azure_service,
@@ -60,7 +62,7 @@ class OptimizedPhoneAI:
         )
         self.performance_monitor = PerformanceMonitor()
         
-        self.logger.info("⚡ Optimized Phone AI initialized")
+        self.logger.info("⚡ Optimized Phone AI initialized with rate limiting")
     
     async def initialize(self):
         """Initialize and pre-generate common responses"""
