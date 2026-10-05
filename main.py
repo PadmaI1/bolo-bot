@@ -90,8 +90,13 @@ async def lifespan(app: FastAPI):
         app_state["service_health"]["murf"] = "healthy"
         logger.info("Murf Voice Services initialized")
         
-        # Initialize Murf WebSocket Streaming for phone calls
-        murf_ws_streaming = MurfWebSocketStreaming()
+        # Initialize Rate Limiter for Murf API (prevents 429 errors)
+        from services.rate_limiter import MurfRateLimiter
+        rate_limiter = MurfRateLimiter(requests_per_minute=20, burst_limit=3)
+        logger.info("🚦 Rate limiter initialized (20 req/min, burst: 3)")
+        
+        # Initialize Murf WebSocket Streaming for phone calls WITH rate limiter
+        murf_ws_streaming = MurfWebSocketStreaming(rate_limiter=rate_limiter)
         app_state["service_health"]["murf_ws"] = "healthy"
         logger.info("⚡ Murf WebSocket Streaming initialized - Ultra-low latency for phone calls!")
         
@@ -123,12 +128,27 @@ async def lifespan(app: FastAPI):
         optimized_phone_ai = OptimizedPhoneAI(
             intelligent_phone_ai=intelligent_phone_ai,
             azure_service=azure_service,
-            murf_service=murf_ws_streaming
+            murf_service=murf_ws_streaming,
+            rate_limiter=rate_limiter  # Pass rate limiter to optimization system
         )
         
-        # Pre-generate common responses at startup
-        logger.info("🚀 Initializing performance optimizations...")
-        await optimized_phone_ai.initialize()
+        # Pre-generation control via environment variable
+        enable_pregeneration = os.getenv("ENABLE_PREGENERATION", "true").lower() == "true"
+        pregeneration_mode = os.getenv("PREGENERATION_MODE", "background")  # "blocking" or "background"
+        
+        if enable_pregeneration:
+            if pregeneration_mode == "background":
+                # Pre-generate in BACKGROUND (server ready immediately)
+                logger.info("🚀 Starting BACKGROUND pre-generation (server ready immediately)...")
+                asyncio.create_task(optimized_phone_ai.initialize())
+                logger.info("⚡ Server READY! Pre-generation running in background...")
+            else:
+                # Pre-generate during startup (blocks server ready)
+                logger.info("🚀 Pre-generating responses at startup (blocking mode)...")
+                await optimized_phone_ai.initialize()
+                logger.info("⚡ Pre-generation complete! Server ready.")
+        else:
+            logger.info("⚡ Pre-generation DISABLED - using on-demand generation only")
         
         # Initialize optimized endpoint handler
         optimized_handler = OptimizedEndpointHandler(optimized_phone_ai)

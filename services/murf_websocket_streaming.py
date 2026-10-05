@@ -20,10 +20,11 @@ class MurfWebSocketStreaming:
     Perfect for phone calls and interactive voice applications
     """
     
-    def __init__(self):
+    def __init__(self, rate_limiter=None):
         self.api_key = os.getenv("MURF_API_KEY")
         self.websocket_url = "wss://api.murf.ai/v1/speech/generate-stream"
         self.logger = logging.getLogger(__name__)
+        self.rate_limiter = rate_limiter  # Add rate limiter support
         
         # Indian voices for multi-language support
         self.voices = {
