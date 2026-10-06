@@ -50,7 +50,9 @@ class MurfWebSocketStreaming:
         style: str = "Conversational",
         min_buffer_size: int = 40,  # Minimum for fastest TTFB
         max_buffer_delay_ms: int = 200,  # Lower for faster response
-        context_id: Optional[str] = None
+        context_id: Optional[str] = None,
+        timeout_seconds: float = 12.0,  # Increased from 8.0 to give Murf more time
+        max_retries: int = 2
     ) -> bytes:
         """
         Generate audio using Murf WebSocket streaming optimized for phone calls
@@ -67,104 +69,137 @@ class MurfWebSocketStreaming:
         Returns:
             Audio bytes in WAV format (ULAW encoded) ready for Twilio
         """
-        ws = None
-        audio_chunks = []
-        first_chunk_time = None
-        start_time = asyncio.get_event_loop().time()
+        attempt = 0
+        last_error: Optional[Exception] = None
+        overall_start = asyncio.get_event_loop().time()
         
-        try:
-            # WebSocket URL with API key
-            url = f"wss://api.murf.ai/v1/speech/stream-input?api-key={self.api_key}&sample_rate=8000&channel_type=MONO&format=WAV"
-            
-            self.logger.info(f"🔄 Connecting to Murf WebSocket for voice: {voice_id}")
-            ws = await websockets.connect(url, ping_interval=20, ping_timeout=10)
-            self.logger.info("✅ WebSocket connected")
-            
-            # Send voice configuration
-            voice_config = {
-                "voice_config": {
-                    "voiceId": voice_id,
-                    "style": style,
-                    "rate": 0,  # Normal speed
-                    "pitch": 0,  # Normal pitch
-                    "variation": 1  # Natural variation
+        while attempt < max_retries:
+            ws = None
+            audio_chunks: list[bytes] = []
+            first_chunk_time = None
+            start_time = asyncio.get_event_loop().time()
+            attempt += 1
+            attempt_tag = f"(attempt {attempt}/{max_retries})" if max_retries > 1 else ""
+            try:
+                # Acquire rate limiter slot if available
+                if self.rate_limiter:
+                    self.logger.debug(f"🚦 Waiting for rate limiter... {attempt_tag}")
+                    await self.rate_limiter.acquire()
+                
+                # WebSocket URL with API key
+                url = f"wss://api.murf.ai/v1/speech/stream-input?api-key={self.api_key}&sample_rate=8000&channel_type=MONO&format=WAV"
+                self.logger.info(f"🔄 Connecting to Murf WebSocket for voice: {voice_id} {attempt_tag}")
+                ws = await websockets.connect(url, ping_interval=20, ping_timeout=10)
+                self.logger.info("✅ WebSocket connected")
+                
+                # Send voice configuration with optimal parameters
+                voice_config = {
+                    "voice_config": {
+                        "voiceId": voice_id,
+                        "style": style,
+                        "rate": 15,  # Slightly faster (0-50, default 15)
+                        "pitch": 0,  # Natural pitch
+                        "variation": 1  # Natural variation
+                    }
                 }
-            }
-            
-            await ws.send(json.dumps(voice_config))
-            self.logger.info(f"📤 Voice config sent: {voice_id}")
-            
-            # Send text with end flag
-            text_msg = {
-                "text": text,
-                "end": True  # Signal end of input
-            }
-            
-            await ws.send(json.dumps(text_msg))
-            self.logger.info(f"� Text sent: '{text[:60]}...'")
-            
-            # Receive audio chunks in real-time
-            first_chunk = True
-            chunk_count = 0
-            
-            while True:
-                try:
-                    response = await asyncio.wait_for(ws.recv(), timeout=15.0)
-                    data = json.loads(response)
-                    
-                    if "audio" in data:
-                        audio_b64 = data["audio"]
-                        if audio_b64:
-                            audio_bytes = base64.b64decode(audio_b64)
-                            
-                            # Skip WAV header for first chunk only
-                            if first_chunk and len(audio_bytes) > 44:
-                                audio_bytes = audio_bytes[44:]
-                                first_chunk = False
-                                first_chunk_time = asyncio.get_event_loop().time()
-                                ttfb = (first_chunk_time - start_time) * 1000
-                                self.logger.info(f"⚡ First audio chunk! TTFB: {ttfb:.0f}ms")
-                            
-                            if len(audio_bytes) > 0:
-                                chunk_count += 1
-                                audio_chunks.append(audio_bytes)
-                                self.logger.debug(f"🎵 Chunk {chunk_count}: {len(audio_bytes)} bytes")
-                    
-                    if data.get("final"):
-                        self.logger.info(f"✅ Synthesis complete: {chunk_count} chunks")
-                        break
+                await ws.send(json.dumps(voice_config))
+                self.logger.info(f"📤 Voice config sent: {voice_id} (rate=15)")
+                
+                # Don't wait for acknowledgment - continue immediately
+                # Murf sends audio first, acknowledgment comes later or not at all
+                self.logger.info("⚡ Proceeding without waiting for ack (faster)")
+                
+                # Send text with end flag
+                text_msg = {"text": text, "end": True}
+                await ws.send(json.dumps(text_msg))
+                text_preview = text[:60] if len(text) > 60 else text
+                self.logger.info(f"📝 Text sent ({len(text)} chars): '{text_preview}...'")
+                
+                first_chunk = True
+                chunk_count = 0
+                
+                while True:
+                    try:
+                        response = await asyncio.wait_for(ws.recv(), timeout=timeout_seconds)
+                        data = json.loads(response)
                         
-                except asyncio.TimeoutError:
-                    if chunk_count > 0:
-                        self.logger.info(f"✅ Timeout reached, got {chunk_count} chunks")
-                        break
-                    else:
-                        self.logger.error("❌ Timeout with no audio received!")
-                        raise Exception("No audio received from Murf")
-            
-            # Combine all audio chunks
-            full_audio = b''.join(audio_chunks)
-            
-            if len(full_audio) == 0:
-                raise Exception("Empty audio generated")
-            
-            # Create proper WAV file with ULAW encoding
-            wav_data = self._create_wav_from_pcm(full_audio)
-            
-            total_time = (asyncio.get_event_loop().time() - start_time) * 1000
-            self.logger.info(f"🎉 Complete! {len(wav_data)} bytes in {total_time:.0f}ms")
-            
-            return wav_data
-            
-        except Exception as e:
-            self.logger.error(f"❌ WebSocket streaming failed: {e}")
-            raise
-        finally:
-            if ws:
+                        # Log what we receive for debugging
+                        if chunk_count == 0:
+                            self.logger.info(f"📥 First response keys: {list(data.keys())}")
+                        else:
+                            self.logger.debug(f"📥 Response keys: {list(data.keys())}")
+                        
+                        # Check for errors from Murf
+                        if "error" in data:
+                            error_msg = data.get("error", {})
+                            self.logger.error(f"❌ Murf API error: {error_msg}")
+                            raise Exception(f"Murf API error: {error_msg}")
+                        
+                        # Check for status messages
+                        if "status" in data:
+                            status_msg = data.get("status")
+                            self.logger.info(f"ℹ️ Status: {status_msg}")
+                        
+                        if "audio" in data:
+                            audio_b64 = data["audio"]
+                            if audio_b64:
+                                audio_bytes = base64.b64decode(audio_b64)
+                                if first_chunk and len(audio_bytes) > 44:
+                                    audio_bytes = audio_bytes[44:]
+                                    first_chunk = False
+                                    first_chunk_time = asyncio.get_event_loop().time()
+                                    ttfb = (first_chunk_time - start_time) * 1000
+                                    self.logger.info(f"⚡ First audio chunk! TTFB: {ttfb:.0f}ms {attempt_tag}")
+                                if len(audio_bytes) > 0:
+                                    chunk_count += 1
+                                    audio_chunks.append(audio_bytes)
+                                    self.logger.debug(f"🎵 Chunk {chunk_count}: {len(audio_bytes)} bytes")
+                        
+                        if data.get("final"):
+                            self.logger.info(f"✅ Synthesis complete: {chunk_count} chunks {attempt_tag}")
+                            break
+                    except asyncio.TimeoutError:
+                        if chunk_count > 0:
+                            self.logger.info(f"✅ Timeout reached, got {chunk_count} chunks {attempt_tag}")
+                            break
+                        else:
+                            raise Exception("No audio received from Murf (timeout)")
+                
+                full_audio = b"".join(audio_chunks)
+                if len(full_audio) == 0:
+                    raise Exception("Empty audio generated")
+                # Success
+                ws_close_start = asyncio.get_event_loop().time()
                 try:
-                    await ws.close()
-                except:
+                    if ws:
+                        await ws.close()
+                finally:
                     pass
+                # Create WAV
+                wav_data = self._create_wav_from_pcm(full_audio)
+                total_time = (asyncio.get_event_loop().time() - start_time) * 1000
+                overall_total = (asyncio.get_event_loop().time() - overall_start) * 1000
+                self.logger.info(f"🎉 Complete! {len(wav_data)} bytes in {total_time:.0f}ms {attempt_tag} (overall {overall_total:.0f}ms)")
+                return wav_data
+            except Exception as e:
+                last_error = e
+                self.logger.error(f"❌ WebSocket streaming failed {attempt_tag}: {e}")
+                if attempt < max_retries:
+                    backoff = 0.5 * attempt
+                    self.logger.warning(f"⚠️ Retrying in {backoff:.1f}s... {attempt_tag}")
+                    await asyncio.sleep(backoff)
+                else:
+                    self.logger.error(f"❌ All {max_retries} attempts failed for voice {voice_id}")
+                    raise
+            finally:
+                if ws:
+                    try:
+                        await ws.close()
+                    except:
+                        pass
+            
+        # Should not reach here normally
+        raise last_error if last_error else Exception("Unknown streaming failure")
     
     def _create_wav_from_pcm(self, pcm_data: bytes) -> bytes:
         """Create WAV file from PCM data"""
