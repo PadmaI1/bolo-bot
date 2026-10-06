@@ -197,6 +197,8 @@ class UltraFastNativeSales:
         start_time = time.time()
         
         try:
+            self.logger.info(f"🎙️ Generating audio for text ({len(text)} chars): '{text[:100]}...'")
+            
             # Import the working Murf WebSocket service
             from services.murf_websocket_streaming import MurfWebSocketStreaming
             
