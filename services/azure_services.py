@@ -123,16 +123,18 @@ class AzureServicesOptimized:
                 else:
                     self.logger.warning(f"⚠️ SLOW LLM: {processing_time:.0f}ms")
                 
-                if not text:
-                    self.logger.error("❌ LLM returned empty text!")
-                    text = "I understand. Let me help you with that."
+                # CRITICAL: Check for empty or whitespace-only responses
+                if not text or text.strip() == "":
+                    self.logger.error("❌ LLM returned empty text! Prompts may need improvement.")
+                    # Return empty so calling code can handle with context-aware fallback
+                    return ""
                 
                 return text
                 
             except Exception as e:
                 self.logger.error(f"❌ Lightning LLM failed: {e}")
-                # Fast fallback response
-                return "I understand. Let me help you with that. Can you tell me more?"
+                # Return empty so calling code handles fallback with context
+                return ""
     
     async def transcribe_audio_optimized(self, audio_data: bytes, language: str = "en") -> Dict[str, Any]:
         """Ultra-fast audio transcription with Azure STT"""

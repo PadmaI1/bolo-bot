@@ -77,6 +77,123 @@ app_state = {
     "service_health": {}
 }
 
+# ⚡ Conversation memory for context-aware responses
+conversation_memory: Dict[str, list] = {}
+
+def _get_conversation_history(call_sid: str) -> str:
+    """Get formatted conversation history for context"""
+    if call_sid not in conversation_memory:
+        return "No previous conversation"
+    
+    history = conversation_memory[call_sid][-6:]  # Last 3 exchanges (6 messages)
+    if not history:
+        return "This is the start of conversation"
+    
+    formatted = []
+    for msg in history:
+        speaker = "Customer" if msg["role"] == "customer" else "You"
+        formatted.append(f"{speaker}: {msg['text']}")
+    
+    return "\n".join(formatted)
+
+def _update_conversation_history(call_sid: str, customer_text: str, agent_response: str):
+    """Update conversation history"""
+    if call_sid not in conversation_memory:
+        conversation_memory[call_sid] = []
+    
+    conversation_memory[call_sid].extend([
+        {"role": "customer", "text": customer_text, "timestamp": time.time()},
+        {"role": "agent", "text": agent_response, "timestamp": time.time()}
+    ])
+    
+    # Keep only last 20 messages (10 exchanges)
+    if len(conversation_memory[call_sid]) > 20:
+        conversation_memory[call_sid] = conversation_memory[call_sid][-20:]
+
+def _detect_intent(speech_result: str) -> str:
+    """Fast intent detection using keywords (no AI needed)"""
+    text_lower = speech_result.lower()
+    
+    # Positive interest signals
+    if any(word in text_lower for word in ["yes", "sure", "okay", "interested", "tell me more", "sounds good"]):
+        return "interested"
+    
+    # Questions about product/features
+    if any(word in text_lower for word in ["what", "how", "can you", "tell me about", "explain", "show me"]):
+        return "seeking_information"
+    
+    # Pricing/cost concerns
+    if any(word in text_lower for word in ["price", "cost", "expensive", "cheap", "budget", "afford"]):
+        return "pricing_inquiry"
+    
+    # Technical questions
+    if any(word in text_lower for word in ["api", "integration", "technical", "documentation", "sdk", "code"]):
+        return "technical_inquiry"
+    
+    # Objections
+    if any(word in text_lower for word in ["not interested", "busy", "not now", "call back", "maybe later"]):
+        return "objection"
+    
+    # Request for demo/trial
+    if any(word in text_lower for word in ["demo", "trial", "test", "example", "show", "see it"]):
+        return "demo_request"
+    
+    # Real estate specific
+    if any(word in text_lower for word in ["property", "bhk", "flat", "apartment", "location", "gachibowli", "hitec"]):
+        return "property_inquiry"
+    
+    # Confirmation/acknowledgment
+    if any(word in text_lower for word in ["hello", "hi", "yeah", "ok", "can hear", "listening"]):
+        return "acknowledgment"
+    
+    return "general_inquiry"
+
+def _is_generic_response(response: str) -> bool:
+    """Check if response is generic/unhelpful"""
+    generic_phrases = [
+        "let me help you with that",
+        "i understand your concern",
+        "that's a good question",
+        "i can help with that",
+        "let me assist you",
+        "i'd be happy to help",
+        "thank you for sharing"
+    ]
+    
+    response_lower = response.lower()
+    
+    # Check if response is too short and generic
+    if len(response.split()) < 10:
+        for phrase in generic_phrases:
+            if phrase in response_lower:
+                return True
+    
+    return False
+
+def _generate_smart_fallback(call_type: str, customer_speech: str, intent: str) -> str:
+    """Generate smart fallback based on context"""
+    if call_type == "b2b_sales":
+        if intent == "interested":
+            return "Great! Tell me, what kind of voice content are you creating today - is it for e-learning, marketing videos, or something else?"
+        elif intent == "pricing_inquiry":
+            return "Murf API pricing is very affordable - you pay only for what you use. Most startups spend around $50-200/month. What's your expected monthly voice content volume?"
+        elif intent == "technical_inquiry":
+            return "Our API is super simple - just a REST endpoint. You send text, get audio back. Works with Python, Node, Java, anything. Want me to email you the integration guide?"
+        elif intent == "demo_request":
+            return "Perfect! I can set up a 15-minute live demo where I'll show you the API in action. What day works best for you - tomorrow or later this week?"
+        else:
+            return "I'd love to learn about your voice content needs. Are you currently using voice actors, or doing voiceovers yourself?"
+    
+    else:  # real_estate
+        if intent == "interested":
+            return "Excellent! What's your budget range and preferred location in Hyderabad - are you looking at Gachibowli, Hitec City, or another area?"
+        elif intent == "property_inquiry":
+            return "We have amazing properties! Tell me your budget, preferred location, and whether you want 2BHK, 3BHK, or a villa?"
+        elif intent == "pricing_inquiry":
+            return "Property prices in Gachibowli start from ₹60 lakhs for 2BHK and ₹1.2 crores for 3BHK. What's your budget range, Arjun?"
+        else:
+            return "Perfect! Are you looking for a property for your own residence or investment purposes? And what's your budget range?"
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """⚡ Lightning-fast startup - NO preprocessing, direct streaming only"""
@@ -968,36 +1085,148 @@ async def process_speech(call_type: str, request: Request):
         sentiment = sales_agent.analyze_customer_sentiment(speech_result)
         logger.info(f"💭 Sentiment: {sentiment}")
         
-        # 4. Generate AI response - FIXED: Better prompt structure
+        # 4. Build conversation history for context
+        conversation_history = _get_conversation_history(call_sid)
+        
+        # 5. Detect customer intent and create context
+        intent = _detect_intent(speech_result)
+        logger.info(f"🎯 Intent: {intent}")
+        
+        # 6. Generate AI response with RICH CONTEXT - FIXED: No more generic responses!
+        if call_type == "b2b_sales":
+            system_prompt = f"""You are {persona.name}, a senior B2B sales expert at Murf AI with {persona.experience}.
+
+YOUR PRODUCT: Murf AI Text-to-Speech API
+- Converts text to natural-sounding voice in 20+ languages
+- Premium voices (like mine - {voice_id})
+- RESTful API with simple integration
+- Use cases: E-learning, marketing, IVR, podcasts, audiobooks
+- Pricing: Pay-as-you-go, enterprise plans available
+- Key benefit: Save 80% time & cost vs hiring voice actors
+
+CUSTOMER PROFILE:
+- Name: Arjun
+- Company: Tech startup (likely)
+- Current conversation stage: Discovery
+- Sentiment: {sentiment}
+- Intent: {intent}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+YOUR SALES APPROACH:
+1. If they say "yes/sure/okay" → Ask discovery questions about their voice content needs
+2. If they ask questions → Answer specifically with Murf AI features/benefits
+3. If they show interest → Share specific use cases and ROI
+4. If objections → Address with value-focused responses
+5. Always move conversation forward with strategic questions
+
+RESPONSE STYLE:
+- Natural, conversational (mix Hindi/English if appropriate)
+- Use "Arjun" name naturally
+- Be specific about Murf AI capabilities
+- Ask strategic questions to understand needs
+- NEVER give generic responses like "let me help you with that"
+- Each response should provide value or gather important info
+
+Example good responses:
+- "Great! Tell me Arjun, what kind of voice content are you creating today - is it for training videos, marketing, or something else?"
+- "Perfect timing! Many startups use Murf API to scale their content. Are you currently using voice actors or doing voiceovers manually?"
+- "I understand the concern about cost. With Murf, you actually save money - one of our clients cut their voice production costs by 75%. What's your monthly voice content volume?"
+
+CRITICAL: Base your response on what they ACTUALLY said, not generic acknowledgments."""
+
+        else:  # real_estate
+            system_prompt = f"""You are {persona.name}, a senior property consultant at JK Ventures Hyderabad with {persona.experience}.
+
+YOUR EXPERTISE: Hyderabad Real Estate
+- Premium properties in Gachibowli, Hitec City, Jubilee Hills, Banjara Hills
+- Residential: 2BHK (₹60L-1.2Cr), 3BHK (₹1-2.5Cr), Villas (₹2.5Cr+)
+- Commercial: Office spaces, retail shops
+- Investment properties with 8-12% annual returns
+- RERA approved projects, ready-to-move and under-construction
+
+CUSTOMER PROFILE:
+- Name: Arjun
+- Location interest: Hyderabad (likely IT corridor)
+- Sentiment: {sentiment}
+- Intent: {intent}
+
+CONVERSATION HISTORY:
+{conversation_history}
+
+YOUR APPROACH:
+1. If they say "yes/sure/okay" → Ask qualifying questions (budget, location preference, property type)
+2. If they ask about properties → Share specific options with prices and features
+3. If interested → Describe property details, amenities, investment potential
+4. If budget concerns → Show options in their range, explain payment plans
+5. Always guide toward site visit or WhatsApp property details
+
+RESPONSE STYLE:
+- Warm, trustworthy, expert
+- Use "Arjun" name naturally
+- Share specific property details when relevant
+- Ask qualifying questions strategically
+- NEVER generic responses
+- Build urgency naturally (limited inventory, price appreciation)
+
+Example good responses:
+- "Excellent! Tell me Arjun, what's your budget range and preferred location in Hyderabad - are you looking at the IT corridor like Gachibowli or Madhapur?"
+- "Perfect! We have beautiful 3BHK options in Gachibowli starting from ₹1.2 crores with excellent amenities. Is this for investment or your own residence?"
+- "Great question! Property prices in Hitec City have appreciated 12% this year. I have a RERA-approved project with ready possession. Can I WhatsApp you the details?"
+
+CRITICAL: Respond specifically to what they said, not with generic acknowledgments."""
+
         ai_task = asyncio.create_task(
             azure_service.generate_text_lightning(
                 messages=[
-                    {"role": "system", "content": f"""You are {persona.name}, {persona.experience} B2B sales expert.
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": f"""Customer just said: "{speech_result}"
 
-Personality: {', '.join(persona.traits)}
-Language: Mix {language.title()}/English naturally
-Tone: Warm, consultative
-Sentiment: Customer is {sentiment}
+Generate a natural, helpful response that:
+1. Directly addresses what they said
+2. Provides specific information or asks strategic questions
+3. Shows expertise in your field
+4. Uses their name (Arjun) naturally
+5. Moves conversation forward purposefully
 
-RULES:
-1. ALWAYS respond with actual content (never empty!)
-2. Keep SHORT (1-2 sentences max)
-3. Use "Arjun" occasionally
-4. Be natural and conversational
-5. If Hindi detected, mix Hindi/English phrases"""},
-                    {"role": "user", "content": f"Customer just said: \"{speech_result}\"\n\nYour response (1-2 sentences):"}
+Your response (2-3 sentences max):"""}
                 ],
-                max_tokens=150,  # Increased for better responses
-                temperature=0.8   # More natural
+                max_tokens=180,  # Longer for detailed responses
+                temperature=0.85  # More natural but focused
             )
         )
         
-        # 5. Get AI response
+        # 7. Get AI response
         ai_response = await ai_task
         
+        # 8. Validate response quality - NO MORE GENERIC RESPONSES!
         if not ai_response or ai_response.strip() == "":
-            logger.error("❌ Empty AI response received")
-            ai_response = "I understand. Let me help you with that. Can you tell me more?"
+            logger.error("❌ Empty AI response - using smart fallback")
+            ai_response = _generate_smart_fallback(call_type, speech_result, intent)
+        elif _is_generic_response(ai_response):
+            logger.warning(f"⚠️ Generic response detected: {ai_response}")
+            # Try again with more explicit instructions
+            ai_response = await azure_service.generate_text_lightning(
+                messages=[
+                    {"role": "system", "content": "You are a B2B sales expert. NO generic responses allowed!"},
+                    {"role": "user", "content": f"""The customer said: "{speech_result}"
+
+Intent: {intent}
+Context: {call_type.replace('_', ' ')} call
+
+Generate a SPECIFIC response with actual information or strategic questions.
+NOT allowed: "let me help", "I understand", "that's good", generic acknowledgments
+Required: Specific questions, product details, or actionable information
+
+Response:"""}
+                ],
+                max_tokens=150,
+                temperature=0.9
+            )
+        
+        # 9. Store in conversation history
+        _update_conversation_history(call_sid, speech_result, ai_response)
         
         logger.info(f"🤖 AI Response ({len(ai_response)} chars): {ai_response}")
         

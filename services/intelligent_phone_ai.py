@@ -120,38 +120,51 @@ class IntelligentPhoneAI:
         lead_name = lead_info.get("name", "there")
         
         if conv["call_type"] == "b2b_sales":
-            # Murf API sales call
+            # Murf API sales call with VALUE PROPOSITION
             prompt = f"""You are {persona['name']}, an {persona['role']} at {persona['company']}.
 
-You're calling {lead_name} to discuss how Murf AI's Text-to-Speech API can help their business.
+PRODUCT: Murf AI Text-to-Speech API
+- Converts text to ultra-realistic voice in 20+ languages
+- 120+ AI voices (like mine)
+- Simple REST API integration
+- Use cases: E-learning, IVR, marketing, audiobooks, podcasts
+- Key benefit: Save 80% time & cost vs hiring voice actors
 
-Generate a natural, friendly opening for this call. Make it:
-- Professional yet warm
-- Confirm you're speaking with {lead_name}
-- Briefly mention Murf AI and why you're calling
-- Ask if they have 2-3 minutes to talk
-- Keep it under 30 words
+You're calling {lead_name} to introduce this solution.
 
-Example tone: "Hello! Is this {lead_name}? Hi, I'm {persona['name']} from Murf AI. I'm reaching out about our voice API that can help automate your voice content. Do you have a couple of minutes?"
+Generate a compelling opening that:
+1. Greets and confirms {lead_name}
+2. Introduces yourself from Murf AI
+3. Mentions ONE specific benefit (save time/cost on voice content)
+4. Asks for 2-3 minutes
+5. Keep under 30 words total
 
-Generate opening:"""
+Example: "Hi {lead_name}, this is {persona['name']} from Murf AI. I'm calling about our Text-to-Speech API that helps businesses cut voice production costs by 80%. Do you have 2 minutes to chat?"
+
+Generate natural opening:"""
         
         else:  # real_estate
-            # JK Ventures real estate call
+            # JK Ventures real estate call with PROPERTY SPECIFICS
             prompt = f"""You are {persona['name']}, a {persona['role']} at {persona['company']}.
 
-You're calling {lead_name} about properties in Hyderabad.
+PROPERTIES: Hyderabad Premium Real Estate
+- Locations: Gachibowli, Hitec City, Jubilee Hills, Banjara Hills
+- 2BHK: ₹60L-1.2Cr | 3BHK: ₹1-2.5Cr | Villas: ₹2.5Cr+
+- RERA approved, ready-to-move and under-construction
+- Investment returns: 8-12% annually
 
-Generate a natural, friendly opening for this call. Make it:
-- Warm and approachable
-- Confirm you're speaking with {lead_name}
-- Mention JK Ventures and Hyderabad properties
-- Ask if they're still looking for properties
-- Keep it under 30 words
+You're calling {lead_name} about their property interest in Hyderabad.
 
-Example tone: "Hello! Am I speaking with {lead_name}? Hi, this is {persona['name']} from JK Ventures. I'm calling about your interest in Hyderabad properties. Are you still looking?"
+Generate a warm opening that:
+1. Greets and confirms {lead_name}
+2. Introduces yourself from JK Ventures
+3. References Hyderabad properties
+4. Creates interest with one detail (location/new listing)
+5. Keep under 30 words
 
-Generate opening:"""
+Example: "Hi {lead_name}, this is {persona['name']} from JK Ventures. I'm calling about premium properties in Hyderabad - we have excellent new 3BHK options in Gachibowli. Do you have a moment?"
+
+Generate natural opening:"""
         
         # Get AI response - Convert to message array format
         messages = [
