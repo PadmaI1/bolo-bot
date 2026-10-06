@@ -80,6 +80,67 @@ app_state = {
 # ⚡ Conversation memory for context-aware responses
 conversation_memory: Dict[str, list] = {}
 
+def get_optimal_bilingual_voice(language: str, call_type: str, gender: str = "male") -> str:
+    """
+    ⭐ Get Shaan voice for bilingual Hindi/English conversations
+    
+    Shaan (hi-IN-shaan) is PERFECT for:
+    - Native Hindi and English bilingual conversations
+    - Indian B2B sales and business discussions
+    - Natural code-switching between languages
+    - Professional, confident, warm tone
+    
+    Args:
+        language: Detected language (hindi, english, telugu)
+        call_type: Type of call (b2b_sales, real_estate)
+        gender: Voice gender (male/female)
+    
+    Returns:
+        Voice ID optimized for bilingual Indian business calls
+    """
+    # Shaan is the BEST for bilingual Hindi/English
+    # Perfect for all Indian business scenarios
+    if gender == "male":
+        return "hi-IN-shaan"  # ⭐ PREMIUM bilingual male voice
+    else:
+        return "hi-IN-shweta"  # ⭐ PREMIUM bilingual female voice (if needed)
+
+def enhance_bilingual_response(ai_response: str, customer_input: str) -> str:
+    """
+    ⭐ Enhance AI response with natural Hindi-English code-switching
+    
+    Makes responses sound more natural for Indian business conversations
+    by adding common Hindi phrases where appropriate.
+    
+    Args:
+        ai_response: Original AI generated response
+        customer_input: What customer said (for context)
+    
+    Returns:
+        Enhanced response with natural bilingual mixing
+    """
+    # Add natural Hindi words for better bilingual feel
+    enhancements = {
+        "Yes": "Haan bilkul",
+        "Thank you": "Dhanyawad",
+        "Okay": "Theek hai",
+        "Good": "Bahut accha",
+        "Perfect": "Bilkul perfect",
+        "Exactly": "Exactly, bilkul sahi",
+        "Great": "Bahut badhiya",
+        "Sure": "Haan ji",
+        "I understand": "Samajh gaya"
+    }
+    
+    enhanced = ai_response
+    for english, hinglish in enhancements.items():
+        # Only replace at start of sentences for natural flow
+        enhanced = enhanced.replace(f"{english}!", f"{hinglish}!")
+        enhanced = enhanced.replace(f"{english},", f"{hinglish},")
+        enhanced = enhanced.replace(f"{english}.", f"{hinglish}.")
+    
+    return enhanced
+
 def _get_conversation_history(call_sid: str) -> str:
     """Get formatted conversation history for context"""
     if call_sid not in conversation_memory:
@@ -969,20 +1030,18 @@ async def generate_twiml(call_type: str, request: Request):
             "property_interest": "Hyderabad" if call_type == "real_estate" else None
         }
         
-        # Start intelligent conversation
-        opening_data = await intelligent_phone_ai.start_conversation(
-            call_sid=str(call_sid),
-            call_type=call_type,
-            lead_info=lead_info,
-            preferred_language="en-IN"
-        )
+        # ⭐ OPTIMIZED: Use pre-crafted bilingual opening messages (FASTER than AI generation)
+        opening_prompts = {
+            "b2b_sales": "Hi Arjun, main Shaan hun Murf AI se. Aapka voice content production 80% faster kar sakta hun. 2 minutes hai?",
+            "real_estate": "Namaste Arjun, main Shaan, property consultant. Aapke liye perfect property mili hai Hyderabad mein. Baat kar sakte hain?"
+        }
         
-        # Get the opening text and voice from AI
-        opening_text = opening_data["text"]
-        voice_id = opening_data["voice_id"]
+        # Use Shaan - premium bilingual voice
+        voice_id = "hi-IN-shaan"
+        opening_text = opening_prompts.get(call_type, opening_prompts["b2b_sales"])
         
-        logger.info(f"🤖 AI Generated Opening: {opening_text}")
-        logger.info(f"🎙️ Using Murf Voice: {voice_id}")
+        logger.info(f"🤖 Optimized Bilingual Opening: {opening_text}")
+        logger.info(f"🎙️ Using Premium Bilingual Voice: {voice_id} (Shaan)")
         
         # Generate Murf audio using WebSocket streaming (fast!)
         audio_path = await murf_ws_streaming.generate_and_save_for_twilio(
@@ -1076,10 +1135,9 @@ async def process_speech(call_type: str, request: Request):
         language = lang_result.language
         logger.info(f"⚡ Language detected: {language} in {lang_result.detection_time_ms:.1f}ms")
         
-        # 2. Get optimal sales persona with premium voice
-        persona = ultra_fast_sales.get_sales_persona(language, gender="female")
-        voice_id = persona.voice_id
-        logger.info(f"👤 Sales persona: {persona.name} ({voice_id})")
+        # 2. ⭐ Use SHAAN - Premium bilingual voice for Hindi/English
+        voice_id = get_optimal_bilingual_voice(language, call_type, gender="male")
+        logger.info(f"🎙️ Using PREMIUM BILINGUAL voice: {voice_id} (Shaan - perfect for Hindi/English mixing)")
         
         # 3. Analyze customer sentiment (fast, no AI)
         sentiment = sales_agent.analyze_customer_sentiment(speech_result)
@@ -1094,11 +1152,12 @@ async def process_speech(call_type: str, request: Request):
         
         # 6. Generate AI response with RICH CONTEXT - FIXED: No more generic responses!
         if call_type == "b2b_sales":
-            system_prompt = f"""You are {persona.name}, a senior B2B sales expert at Murf AI with {persona.experience}.
+            # Shaan - Bilingual B2B sales expert
+            system_prompt = f"""You are Shaan, a senior B2B sales expert at Murf AI with 15+ years experience.
 
 YOUR PRODUCT: Murf AI Text-to-Speech API
 - Converts text to natural-sounding voice in 20+ languages
-- Premium voices (like mine - {voice_id})
+- Premium voices (including hi-IN-shaan for Hindi/English)
 - RESTful API with simple integration
 - Use cases: E-learning, marketing, IVR, podcasts, audiobooks
 - Pricing: Pay-as-you-go, enterprise plans available
@@ -1114,30 +1173,33 @@ CUSTOMER PROFILE:
 CONVERSATION HISTORY:
 {conversation_history}
 
-YOUR SALES APPROACH:
-1. If they say "yes/sure/okay" → Ask discovery questions about their voice content needs
-2. If they ask questions → Answer specifically with Murf AI features/benefits
-3. If they show interest → Share specific use cases and ROI
-4. If objections → Address with value-focused responses
-5. Always move conversation forward with strategic questions
+YOUR SALES APPROACH (BILINGUAL):
+1. Mix Hindi and English naturally (code-switching)
+2. If they say "yes/sure/okay" → Ask discovery questions about voice needs
+3. If they ask questions → Answer specifically with Murf AI features/benefits
+4. If they show interest → Share specific use cases and ROI
+5. If objections → Address with value-focused responses (Feel-Felt-Found)
+6. Always move conversation forward with strategic questions
 
 RESPONSE STYLE:
-- Natural, conversational (mix Hindi/English if appropriate)
-- Use "Arjun" name naturally
+- Natural bilingual (Hindi-English code-switching)
+- Use "Arjun" name frequently
 - Be specific about Murf AI capabilities
 - Ask strategic questions to understand needs
 - NEVER give generic responses like "let me help you with that"
 - Each response should provide value or gather important info
+- Keep responses under 30 words for phone clarity
 
 Example good responses:
-- "Great! Tell me Arjun, what kind of voice content are you creating today - is it for training videos, marketing, or something else?"
-- "Perfect timing! Many startups use Murf API to scale their content. Are you currently using voice actors or doing voiceovers manually?"
-- "I understand the concern about cost. With Murf, you actually save money - one of our clients cut their voice production costs by 75%. What's your monthly voice content volume?"
+- "Bahut accha! Arjun, aap kis type ka voice content create karte hain - training videos, marketing ya kuch aur?"
+- "Perfect timing! Startups Murf API se scale karte hain. Aap currently voice actors use karte hain ya manually?"
+- "Cost concern samajh gaya. Murf se actually money save hota hai - ek client ne 75% cost cut kiya. Monthly kitna voice content hai?"
 
 CRITICAL: Base your response on what they ACTUALLY said, not generic acknowledgments."""
 
         else:  # real_estate
-            system_prompt = f"""You are {persona.name}, a senior property consultant at JK Ventures Hyderabad with {persona.experience}.
+            # Shaan - Bilingual property consultant
+            system_prompt = f"""You are Shaan, a senior property consultant at JK Ventures Hyderabad with 12+ years experience.
 
 YOUR EXPERTISE: Hyderabad Real Estate
 - Premium properties in Gachibowli, Hitec City, Jubilee Hills, Banjara Hills
@@ -1230,15 +1292,11 @@ Response:"""}
         
         logger.info(f"🤖 AI Response ({len(ai_response)} chars): {ai_response}")
         
-        # Enhance response for native speaker
-        enhanced_response = ultra_fast_sales.enhance_response_for_native_speaker(
-            ai_response, 
-            language,
-            speech_result
-        )
+        # Enhance response with natural bilingual mixing (Hindi-English)
+        enhanced_response = enhance_bilingual_response(ai_response, speech_result)
         
-        logger.info(f"✨ Enhanced Response ({len(enhanced_response)} chars): {enhanced_response}")
-        logger.info(f"🎙️ Using PREMIUM voice: {voice_id}")
+        logger.info(f"✨ Enhanced Bilingual Response: {enhanced_response}")
+        logger.info(f"🎙️ Using PREMIUM BILINGUAL voice: {voice_id} (Shaan)")
         
         # 6. Generate audio with ULTRA-FAST streaming
         audio_bytes, metrics = await ultra_fast_sales.generate_ultra_fast(
