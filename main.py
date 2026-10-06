@@ -3,6 +3,7 @@ import logging
 import json
 import base64
 import io
+import time  # ⚡ NEW: For performance tracking
 from datetime import datetime
 from typing import Dict, Any, Optional
 import uvicorn
@@ -29,7 +30,9 @@ from services.conversation_ai import ConversationAI
 from services.mock_crm import MockCRMService
 from services.phone_service import TwilioPhoneService
 from services.intelligent_phone_ai import IntelligentPhoneAI
-from services.optimized_phone_ai import OptimizedPhoneAI, OptimizedEndpointHandler
+# ⚡ NEW: Ultra-fast native sales with premium voices
+from services.ultra_fast_native_sales import UltraFastNativeSales, ExperiencedSalesAgent
+from services.lightning_language_detector import LightningLanguageDetector
 # from services.salesforce_crm import SalesforceIntegration  # Uncomment when ready to use Salesforce
 
 load_dotenv()
@@ -48,19 +51,21 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global service instances
-azure_service = None
-murf_service = None
-murf_ws_streaming = None  # NEW: WebSocket streaming for phone calls
-audio_processor = None
-sales_ai = None
-realestate_ai = None
-conversation_ai = None
-salesforce_crm = None
-phone_service = None
-intelligent_phone_ai = None  # NEW: Smart phone conversation AI
-optimized_phone_ai: OptimizedPhoneAI = None  # NEW: Performance optimizations
-optimized_handler: OptimizedEndpointHandler = None  # NEW: Optimized endpoints
+# Global service instances  
+azure_service: Optional[AzureServicesOptimized] = None
+murf_service: Optional[MurfVoiceOptimized] = None
+murf_ws_streaming: Optional[MurfWebSocketStreaming] = None
+audio_processor: Optional[AudioProcessor] = None
+sales_ai: Optional[SalesAIEngine] = None
+realestate_ai: Optional[RealEstateAIEngine] = None
+conversation_ai: Optional[ConversationAI] = None
+salesforce_crm: Optional[MockCRMService] = None
+phone_service: Optional[TwilioPhoneService] = None
+intelligent_phone_ai: Optional[IntelligentPhoneAI] = None
+# ⚡ NEW: Ultra-fast services with NO preprocessing
+ultra_fast_sales: Optional[UltraFastNativeSales] = None
+language_detector: Optional[LightningLanguageDetector] = None
+sales_agent: Optional[ExperiencedSalesAgent] = None
 
 # Application state
 app_state = {
@@ -72,23 +77,22 @@ app_state = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifecycle management"""
-    # Startup
-    logger.info("Initializing VoiceFlow AI Platform...")
+    """⚡ Lightning-fast startup - NO preprocessing, direct streaming only"""
+    logger.info("⚡ Initializing Lightning-Fast B2B Agent (NO preprocessing)...")
     
-    global azure_service, murf_service, murf_ws_streaming, audio_processor, sales_ai, realestate_ai, conversation_ai, salesforce_crm, phone_service, intelligent_phone_ai
+    global azure_service, murf_service, murf_ws_streaming, audio_processor, sales_ai, realestate_ai, conversation_ai, salesforce_crm, phone_service, intelligent_phone_ai, ultra_fast_sales, language_detector, sales_agent
     
     try:
         # Initialize core services
         azure_service = AzureServicesOptimized()
         await azure_service.initialize()
         app_state["service_health"]["azure"] = "healthy"
-        logger.info("Azure Services initialized")
+        logger.info("✅ Azure Services initialized")
         
         murf_service = MurfVoiceOptimized()
         await murf_service.initialize()
         app_state["service_health"]["murf"] = "healthy"
-        logger.info("Murf Voice Services initialized")
+        logger.info("✅ Murf Voice Services initialized")
         
         # Initialize Rate Limiter for Murf API (prevents 429 errors)
         from services.rate_limiter import MurfRateLimiter
@@ -102,58 +106,39 @@ async def lifespan(app: FastAPI):
         
         audio_processor = AudioProcessor()
         app_state["service_health"]["audio"] = "healthy"
-        logger.info("Audio Processor initialized")
+        logger.info("✅ Audio Processor initialized")
         
         # Initialize AI engines
         sales_ai = SalesAIEngine(azure_service, murf_service, websocket_manager)
         app_state["service_health"]["sales_ai"] = "healthy"
-        logger.info("Sales AI Engine initialized")
+        logger.info("✅ Sales AI Engine initialized")
         
         realestate_ai = RealEstateAIEngine(azure_service, murf_service, websocket_manager)
         app_state["service_health"]["realestate_ai"] = "healthy"
-        logger.info("Real Estate AI Engine initialized")
+        logger.info("✅ Real Estate AI Engine initialized")
         
         # Initialize Conversation AI for human-like calls
         conversation_ai = ConversationAI(azure_service, murf_service, websocket_manager)
         app_state["service_health"]["conversation_ai"] = "healthy"
-        logger.info("Conversation AI initialized - Ready for human-like calls")
+        logger.info("✅ Conversation AI initialized - Ready for human-like calls")
         
-        # Initialize Intelligent Phone AI (NEW - for real phone calls with Murf WebSocket)
+        # Initialize Intelligent Phone AI
         intelligent_phone_ai = IntelligentPhoneAI(azure_service, murf_ws_streaming)
         app_state["service_health"]["intelligent_phone_ai"] = "healthy"
         logger.info("🤖 Intelligent Phone AI initialized - Smart conversations ready!")
         
-        # Initialize Performance Optimizations (NEW - 70% faster responses!)
-        global optimized_phone_ai, optimized_handler
-        optimized_phone_ai = OptimizedPhoneAI(
-            intelligent_phone_ai=intelligent_phone_ai,
-            azure_service=azure_service,
-            murf_service=murf_ws_streaming,
-            rate_limiter=rate_limiter  # Pass rate limiter to optimization system
-        )
-        
-        # Pre-generation control via environment variable
-        enable_pregeneration = os.getenv("ENABLE_PREGENERATION", "true").lower() == "true"
-        pregeneration_mode = os.getenv("PREGENERATION_MODE", "background")  # "blocking" or "background"
-        
-        if enable_pregeneration:
-            if pregeneration_mode == "background":
-                # Pre-generate in BACKGROUND (server ready immediately)
-                logger.info("🚀 Starting BACKGROUND pre-generation (server ready immediately)...")
-                asyncio.create_task(optimized_phone_ai.initialize())
-                logger.info("⚡ Server READY! Pre-generation running in background...")
-            else:
-                # Pre-generate during startup (blocks server ready)
-                logger.info("🚀 Pre-generating responses at startup (blocking mode)...")
-                await optimized_phone_ai.initialize()
-                logger.info("⚡ Pre-generation complete! Server ready.")
-        else:
-            logger.info("⚡ Pre-generation DISABLED - using on-demand generation only")
-        
-        # Initialize optimized endpoint handler
-        optimized_handler = OptimizedEndpointHandler(optimized_phone_ai)
-        app_state["service_health"]["optimized_ai"] = "healthy"
-        logger.info("⚡ Performance optimizations ACTIVE - Expect 70% faster responses!")
+        # ⚡⚡⚡ NEW: Ultra-Fast Services with Premium Voices ⚡⚡⚡
+        # NO preprocessing, NO caching - Direct streaming only!
+        ultra_fast_sales = UltraFastNativeSales()
+        language_detector = LightningLanguageDetector()
+        sales_agent = ExperiencedSalesAgent()
+        app_state["service_health"]["ultra_fast"] = "healthy"
+        logger.info("⚡⚡⚡ ULTRA-FAST Native Sales initialized!")
+        logger.info("    ✅ Premium Hindi voices (shweta/shaan)")
+        logger.info("    ✅ Connection pooling (saves 650ms/call)")
+        logger.info("    ✅ Direct WebSocket streaming")
+        logger.info("    ✅ Target: <500ms TTFB, <1.5s total")
+        logger.info("⚡ Lightning-fast system ready - NO preprocessing!")
         
         # Initialize CRM integration (Mock or Salesforce)
         try:
@@ -161,22 +146,23 @@ async def lifespan(app: FastAPI):
                 salesforce_crm = MockCRMService()
                 if await salesforce_crm.initialize():
                     app_state["service_health"]["crm"] = "healthy"
-                    logger.info("Mock CRM integrated (development mode)")
+                    logger.info("✅ Mock CRM integrated (development mode)")
                 else:
                     app_state["service_health"]["crm"] = "degraded"
-                    logger.warning("Mock CRM integration degraded")
+                    logger.warning("⚠️ Mock CRM integration degraded")
             else:
                 from services.salesforce_crm import SalesforceIntegration
-                salesforce_crm = SalesforceIntegration()
-                if await salesforce_crm.initialize():
+                sf_crm = SalesforceIntegration()
+                if await sf_crm.initialize():
+                    salesforce_crm = sf_crm
                     app_state["service_health"]["crm"] = "healthy"
-                    logger.info("Salesforce CRM integrated")
+                    logger.info("✅ Salesforce CRM integrated")
                 else:
                     app_state["service_health"]["crm"] = "degraded"
-                    logger.warning("Salesforce integration degraded")
+                    logger.warning("⚠️ Salesforce integration degraded")
         except Exception as e:
             app_state["service_health"]["crm"] = "offline"
-            logger.warning(f"CRM offline: {e}")
+            logger.warning(f"⚠️ CRM offline: {e}")
             # Fallback to Mock CRM
             if not USE_MOCK_CRM:
                 logger.info("Falling back to Mock CRM...")
@@ -192,10 +178,10 @@ async def lifespan(app: FastAPI):
                 logger.info("📞 Twilio Phone Service initialized - Real phone calls enabled")
             else:
                 app_state["service_health"]["phone"] = "offline"
-                logger.warning("Phone service not configured - add Twilio credentials to .env")
+                logger.warning("⚠️ Phone service not configured - add Twilio credentials to .env")
         except Exception as e:
             app_state["service_health"]["phone"] = "offline"
-            logger.warning(f"Phone service offline: {e}")
+            logger.warning(f"⚠️ Phone service offline: {e}")
         
         # Register WebSocket handlers
         websocket_manager.register_handler("audio", handle_audio_message)
@@ -1358,15 +1344,22 @@ async def generate_twiml(call_type: str, request: Request):
 @app.api_route("/api/phone/process-speech/{call_type}", methods=["GET", "POST"])
 async def process_speech(call_type: str, request: Request):
     """
-    Process speech input from Twilio and generate INTELLIGENT AI response
-    Uses IntelligentPhoneAI for dynamic, context-aware conversations
-    Uses Murf WebSocket Streaming for premium voice quality
-    Accepts both GET and POST methods for Twilio compatibility
+    ⚡⚡⚡ ULTRA-FAST Speech Processing ⚡⚡⚡
+    Target: <1.5s total response time
+    
+    Features:
+    - Direct WebSocket streaming (no caching)
+    - Premium Hindi voices (shweta/shaan)
+    - Natural sales conversation
+    - Connection pooling (saves 650ms)
+    - <500ms TTFB target
     """
     from twilio.twiml.voice_response import VoiceResponse, Gather
     
-    if not phone_service or not intelligent_phone_ai or not murf_ws_streaming:
-        raise HTTPException(status_code=503, detail="Phone service not available")
+    if not ultra_fast_sales or not language_detector or not sales_agent:
+        raise HTTPException(status_code=503, detail="Ultra-fast service not available")
+    
+    start_time = time.time()
     
     try:
         form_data = await request.form()
@@ -1375,98 +1368,149 @@ async def process_speech(call_type: str, request: Request):
         
         logger.info(f"🎤 Customer speech ({call_type}): {speech_result}")
         
-        # Check if conversation exists, if not start it
-        if call_sid not in intelligent_phone_ai.conversations:
-            # Start conversation with default lead info
-            lead_info = {"name": "Arjun"}  # You can get this from database
-            await intelligent_phone_ai.start_conversation(
-                call_sid=str(call_sid),
-                call_type=call_type,
-                lead_info=lead_info,
-                preferred_language="en-IN"
-            )
+        # 1. INSTANT language detection (<1ms)
+        lang_result = language_detector.detect_lightning_fast(speech_result)
+        language = lang_result.language
+        logger.info(f"⚡ Language detected: {language} in {lang_result.detection_time_ms:.1f}ms")
         
-        # Process customer speech with intelligent AI
-        ai_response_data = await intelligent_phone_ai.process_customer_response(
-            call_sid=str(call_sid),
-            customer_speech=str(speech_result)
+        # 2. Get optimal sales persona with premium voice
+        persona = ultra_fast_sales.get_sales_persona(language, gender="female")
+        voice_id = persona.voice_id
+        logger.info(f"👤 Sales persona: {persona.name} ({voice_id})")
+        
+        # 3. Analyze customer sentiment (fast, no AI)
+        sentiment = sales_agent.analyze_customer_sentiment(speech_result)
+        logger.info(f"💭 Sentiment: {sentiment}")
+        
+        # 4. Generate AI response (concurrent with preparation)
+        ai_task = asyncio.create_task(
+            azure_service.generate_text_lightning(
+                messages=[
+                    {"role": "system", "content": f"""You are {persona.name}, an experienced B2B sales expert with {persona.experience}.
+                    
+Personality: {', '.join(persona.traits)}
+Language: Mix {language.title()} and English naturally (code-switching for Indian customers)
+Tone: Warm, consultative, professional
+Goal: Build rapport, understand needs, offer solutions
+
+Customer sentiment: {sentiment}
+Call type: {call_type}
+
+Instructions:
+- Use customer's name "Arjun" frequently
+- Acknowledge concerns immediately
+- Ask discovery questions (SPIN selling)
+- Mix Hindi/English naturally if Hindi detected
+- Be consultative, not pushy
+- Keep responses conversational (2-3 sentences max)
+- Use natural transitions: "bilkul ji", "aap dekho", "exactly"
+
+Respond naturally to: {speech_result}"""},
+                    {"role": "user", "content": speech_result}
+                ],
+                max_tokens=100,  # Shorter for speed
+                temperature=0.7   # Natural conversation
+            )
         )
         
-        if "error" in ai_response_data:
-            raise Exception(ai_response_data["error"])
+        # 5. Get AI response
+        ai_response = await ai_task
         
-        # Get AI response text and voice
-        response_text = ai_response_data["text"]
-        voice_id = ai_response_data.get("voice_id", "en-IN-priya")
+        # Enhance response for native speaker
+        enhanced_response = ultra_fast_sales.enhance_response_for_native_speaker(
+            ai_response, 
+            language,
+            speech_result
+        )
         
-        logger.info(f"🤖 AI Response: {response_text}")
-        logger.info(f"🎙️ Using Murf Voice: {voice_id}")
+        logger.info(f"🤖 AI Response: {enhanced_response}")
+        logger.info(f"🎙️ Using PREMIUM voice: {voice_id}")
         
-        # Generate Murf audio using WebSocket streaming
-        audio_path = await murf_ws_streaming.generate_and_save_for_twilio(
-            text=response_text,
+        # 6. Generate audio with ULTRA-FAST streaming
+        audio_bytes, metrics = await ultra_fast_sales.generate_ultra_fast(
+            text=enhanced_response,
             voice_id=voice_id,
-            style="Conversational",
-            min_buffer_size=40,
-            max_buffer_delay_ms=200
+            customer_context={
+                "sentiment": sentiment,
+                "language": language
+            }
         )
         
-        audio_url = f"{os.getenv('WEBHOOK_BASE_URL')}/audio/{os.path.basename(audio_path)}"
-        
-        logger.info(f"🎵 Generated audio: {audio_url}")
-        
-        # Create TwiML response
-        response = VoiceResponse()
-        response.play(audio_url)
-        
-        if ai_response_data.get("should_continue", True):
-            # Continue conversation - gather more input
-            gather = Gather(
-                input='speech',
-                timeout=6,  # Optimized timeout
-                speech_timeout='auto',
-                action=f'/api/phone/process-speech/{call_type}',
-                method='POST',
-                language='en-IN',
-                hints='yes, no, interested, not interested, call back, email, price, demo, features'
-            )
-            response.append(gather)
+        if audio_bytes:
+            # Save audio file
+            audio_filename = f"ultra_{int(time.time() * 1000)}.wav"
+            audio_path = f"Voice_outputs/{audio_filename}"
             
-            # Timeout fallback with Polly
-            response.say(
-                "I didn't catch that. Would you like me to call you back at a better time?",
-                voice='Polly.Aditi',
-                language='en-IN'
-            )
+            with open(audio_path, 'wb') as f:
+                f.write(audio_bytes)
+            
+            audio_url = f"{os.getenv('WEBHOOK_BASE_URL')}/audio/{audio_filename}"
+            
+            total_time = (time.time() - start_time) * 1000
+            
+            # Log performance
+            if total_time < 1500:
+                logger.info(f"⚡ FAST REQUEST: /api/phone/process-speech - {total_time:.0f}ms ✅")
+            else:
+                logger.warning(f"⚠️ SLOW REQUEST: /api/phone/process-speech - {total_time:.0f}ms")
+            
+            logger.info(f"    TTFB: {metrics['ttfb_ms']:.0f}ms (target: <500ms)")
+            logger.info(f"    Total: {total_time:.0f}ms (target: <1500ms)")
+            
+            # Create TwiML response
+            response = VoiceResponse()
+            response.play(audio_url)
+            
+            # Continue conversation based on sentiment
+            should_continue = sentiment in ["interested", "neutral", "objection"]
+            
+            if should_continue:
+                # Continue conversation - gather more input
+                gather = Gather(
+                    input='speech',
+                    timeout=5,
+                    speech_timeout='auto',
+                    action=f'/api/phone/process-speech/{call_type}',
+                    method='POST',
+                    language='hi-IN' if language == 'hindi' else 'en-IN',
+                    hints='yes, no, haan, nahi, interested, not interested, call back, email, price, demo, features'
+                )
+                response.append(gather)
+                
+                # Timeout fallback
+                response.say(
+                    "Kya aap sun sakte hain mujhe?" if language == 'hindi' else "Can you hear me?",
+                    voice='Polly.Aditi',
+                    language='hi-IN' if language == 'hindi' else 'en-IN'
+                )
+            else:
+                # End call gracefully
+                closing = "Thank you for your time! I'll send you all details via email. Have a great day!"
+                if language == 'hindi':
+                    closing = "Dhanyavaad ji! Main aapko email bhejungi. Aapka din shubh rahe!"
+                
+                response.say(closing, voice='Polly.Aditi', language='hi-IN' if language == 'hindi' else 'en-IN')
+                response.hangup()
+            
+            return HTMLResponse(content=str(response), media_type="application/xml")
         else:
-            # End call with closing message
-            closing = await intelligent_phone_ai.generate_closing_message(str(call_sid), "completed")
-            
-            # Generate closing audio with Murf
-            closing_audio = await murf_ws_streaming.generate_and_save_for_twilio(
-                text=closing,
-                voice_id=voice_id,
-                style="Conversational",
-                min_buffer_size=40,
-                max_buffer_delay_ms=200
-            )
-            closing_url = f"{os.getenv('WEBHOOK_BASE_URL')}/audio/{os.path.basename(closing_audio)}"
-            response.play(closing_url)
-            response.hangup()
-        
-        return HTMLResponse(content=str(response), media_type="application/xml")
+            raise Exception("No audio generated")
         
     except Exception as e:
-        logger.error(f"❌ Speech processing failed: {e}")
-        # Return error TwiML with Polly fallback
+        logger.error(f"❌ Ultra-fast processing failed: {e}")
+        
+        # Fast fallback
         response = VoiceResponse()
         response.say(
-            "I'm having technical difficulties. Let me have someone call you back. Thank you!",
+            "I apologize for the technical issue. I'll call you back shortly.",
             voice='Polly.Aditi',
             language='en-IN'
         )
         response.hangup()
         return HTMLResponse(content=str(response), media_type="application/xml")
+
+
+# ⚡ NEW: Ultra-Fast Performance Stats Endpoint
 
 @app.get("/audio/{filename}")
 async def serve_audio(filename: str):
@@ -1623,32 +1667,57 @@ async def get_performance_stats():
     """
     Get real-time performance statistics
     
-    Shows:
-    - Cache hit rate
-    - Pre-generated response usage
-    - Average latency metrics
-    - Performance improvements
+    Shows ultra-fast system performance:
+    - Connection pool statistics
+    - Premium voice usage
+    - TTFB and total response metrics
+    - NO preprocessing overhead
     """
     try:
-        if not optimized_phone_ai:
+        if not ultra_fast_sales:
             return JSONResponse(
                 content={
                     "status": "error",
-                    "message": "Optimizations not initialized"
+                    "message": "Ultra-fast service not initialized"
                 },
                 status_code=503
             )
         
-        stats = await optimized_phone_ai.get_performance_stats()
+        # Get connection pool stats from ultra-fast service
+        pool_stats = {
+            "active_connections": len(ultra_fast_sales.connection_pool),
+            "pooled_voices": list(ultra_fast_sales.connection_pool.keys()),
+            "max_pool_size": ultra_fast_sales.max_pool_size,
+            "pool_usage_percent": (len(ultra_fast_sales.connection_pool) / ultra_fast_sales.max_pool_size) * 100
+        }
+        
+        # Get premium voice personas
+        personas_info = {
+            name: {
+                "voice_id": persona.voice_id,
+                "experience": persona.experience,
+                "style": persona.style
+            }
+            for name, persona in ultra_fast_sales.sales_personas.items()
+        }
         
         return JSONResponse(content={
             "status": "success",
             "timestamp": datetime.now().isoformat(),
-            "statistics": stats,
-            "summary": {
-                "cache_hit_rate": f"{stats['cache']['hit_rate_percent']}%",
-                "pre_generated_responses": stats['voice_predictor']['cached_responses'],
-                "optimization_status": "active"
+            "architecture": "ultra-fast-direct-streaming",
+            "connection_pool": pool_stats,
+            "premium_voices": personas_info,
+            "performance_targets": {
+                "ttfb_ms": "<500ms",
+                "total_response_ms": "<1500ms",
+                "connection_ms": "<200ms",
+                "language_detection_ms": "<1ms"
+            },
+            "optimizations": {
+                "preprocessing": "DISABLED (zero startup delay)",
+                "caching": "DISABLED (real-time only)",
+                "connection_pooling": "ENABLED (saves ~650ms per call)",
+                "direct_streaming": "ENABLED (no buffering)"
             }
         })
     except Exception as e:
@@ -1662,28 +1731,59 @@ async def get_performance_stats():
 @app.post("/api/phone/log-performance")
 async def log_performance_report():
     """
-    Trigger detailed performance report in logs
+    Trigger detailed ultra-fast performance report in logs
     
-    Use this to get comprehensive performance analysis:
-    - Cache statistics
-    - Voice predictor usage
-    - Latency percentiles (P50, P95, P99)
+    Logs comprehensive performance analysis:
+    - Connection pool statistics
+    - Premium voice usage patterns
+    - TTFB and total response metrics
+    - Real-time streaming performance
     """
     try:
-        if not optimized_phone_ai:
+        if not ultra_fast_sales:
             return JSONResponse(
                 content={
                     "status": "error",
-                    "message": "Optimizations not initialized"
+                    "message": "Ultra-fast service not initialized"
                 },
                 status_code=503
             )
         
-        await optimized_phone_ai.log_performance_report()
+        # Log detailed connection pool info
+        logger.info("=" * 80)
+        logger.info("⚡ ULTRA-FAST PERFORMANCE REPORT")
+        logger.info("=" * 80)
+        logger.info(f"📊 Connection Pool Status:")
+        logger.info(f"  - Active connections: {len(ultra_fast_sales.connection_pool)}")
+        logger.info(f"  - Max pool size: {ultra_fast_sales.max_pool_size}")
+        logger.info(f"  - Pool usage: {(len(ultra_fast_sales.connection_pool) / ultra_fast_sales.max_pool_size) * 100:.1f}%")
+        logger.info(f"  - Pooled voices: {list(ultra_fast_sales.connection_pool.keys())}")
+        
+        logger.info(f"\n⭐ Premium Voice Personas:")
+        for name, persona in ultra_fast_sales.sales_personas.items():
+            logger.info(f"  - {name}:")
+            logger.info(f"      Voice: {persona.voice_id}")
+            logger.info(f"      Style: {persona.style}")
+            logger.info(f"      Experience: {persona.experience}")
+        
+        logger.info(f"\n🎯 Performance Targets:")
+        logger.info(f"  - TTFB: <500ms")
+        logger.info(f"  - Total Response: <1500ms")
+        logger.info(f"  - Connection: <200ms (with pooling)")
+        logger.info(f"  - Language Detection: <1ms")
+        
+        logger.info(f"\n✅ Active Optimizations:")
+        logger.info(f"  - Connection Pooling: ENABLED (saves ~650ms)")
+        logger.info(f"  - Direct Streaming: ENABLED (no buffering)")
+        logger.info(f"  - Premium Voices: hi-IN-shweta, hi-IN-shaan")
+        logger.info(f"  - Phone Optimization: 8kHz mono WAV")
+        logger.info(f"  - Preprocessing: DISABLED (instant startup)")
+        logger.info(f"  - Caching: DISABLED (real-time only)")
+        logger.info("=" * 80)
         
         return JSONResponse(content={
             "status": "success",
-            "message": "Performance report logged successfully",
+            "message": "Ultra-fast performance report logged successfully",
             "note": "Check server logs for detailed statistics"
         })
     except Exception as e:

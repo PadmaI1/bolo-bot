@@ -67,6 +67,7 @@ class LightningMurfStreaming:
         self.connection_ttl = 300  # 5 minutes
         
         # Optimized voice configurations for phone quality
+        # ⭐ PREMIUM VOICES for best quality
         self.voice_configs = {
             "en-IN-priya": {
                 "min_buffer_size": 20,      # Minimal buffering
@@ -74,11 +75,19 @@ class LightningMurfStreaming:
                 "sample_rate": 8000,         # Phone quality
                 "style": "Conversational"
             },
-            "hi-IN-ayushi": {
-                "min_buffer_size": 25,
-                "max_buffer_delay_ms": 120,
+            # ⭐⭐⭐⭐⭐ PREMIUM Hindi Female - Much better than ayushi
+            "hi-IN-shweta": {
+                "min_buffer_size": 20,      # Faster than old hindi voice
+                "max_buffer_delay_ms": 100,  # Reduced latency
                 "sample_rate": 8000,
-                "style": "Conversational"
+                "style": "Conversational"     # Warm, natural, expressive
+            },
+            # ⭐⭐⭐⭐⭐ PREMIUM Hindi Male - Professional quality
+            "hi-IN-shaan": {
+                "min_buffer_size": 20,
+                "max_buffer_delay_ms": 100,
+                "sample_rate": 8000,
+                "style": "Conversational"     # Confident, calm, professional
             },
             "te-IN-shruti": {
                 "min_buffer_size": 25,
@@ -91,12 +100,6 @@ class LightningMurfStreaming:
                 "max_buffer_delay_ms": 100,
                 "sample_rate": 8000,
                 "style": "Friendly"
-            },
-            "hi-IN-kabir": {
-                "min_buffer_size": 25,
-                "max_buffer_delay_ms": 120,
-                "sample_rate": 8000,
-                "style": "Professional"
             }
         }
         

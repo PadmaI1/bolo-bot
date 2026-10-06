@@ -55,7 +55,7 @@ class LightningLanguageDetector:
                     'क्यों', 'कौन', 'कितना', 'बहुत', 'अच्छा', 'नमस्ते',
                     'धन्यवाद', 'शुक्रिया', 'जरूर', 'बिल्कुल'
                 },
-                'voice': 'hi-IN-ayushi',
+                'voice': 'hi-IN-shweta',  # ⭐ PREMIUM voice (was ayushi)
                 'transliteration': {
                     'hai', 'hoon', 'ji', 'nahi', 'haan', 'aur', 'ka', 'ke',
                     'mein', 'aap', 'kya', 'kaise', 'namaste', 'dhanyavaad'
