@@ -1,0 +1,133 @@
+{
+    "snippets": [
+        {
+            "prefix": "voice-select",
+            "body": [
+                "# Intelligent voice selection",
+                "from services.language_detector import AdvancedLanguageDetector",
+                "from services.voice_router import IntelligentVoiceRouter",
+                "",
+                "detector = AdvancedLanguageDetector()",
+                "router = IntelligentVoiceRouter()",
+                "",
+                "# Detect language",
+                "lang_result = detector.detect_language(${1:text})",
+                "",
+                "# Select voice",
+                "voice_selection = router.select_voice(",
+                "    language=lang_result.language,",
+                "    call_context='${2:b2b_sales}',  # or 'real_estate'",
+                "    language_confidence=lang_result.confidence,",
+                "    previous_voice_id=${3:None}",
+                ")",
+                "",
+                "print(f\"Selected: {voice_selection.voice_name} ({voice_selection.voice_id})\")"
+            ],
+            "description": "Intelligent voice selection pattern"
+        },
+        {
+            "prefix": "voice-generate-optimized",
+            "body": [
+                "# Optimized voice generation",
+                "from services.murf_optimized import MurfWebSocketStreamingOptimized",
+                "",
+                "murf = MurfWebSocketStreamingOptimized(rate_limiter=${1:rate_limiter})",
+                "",
+                "audio = await murf.generate_streaming_audio_optimized(",
+                "    text=${2:response_text},",
+                "    language='${3:english}',  # 'english', 'hindi', 'telugu'",
+                "    gender='${4:female}',     # 'female' or 'male'",
+                "    context_id=${5:call_sid},",
+                "    priority='${6:high}'      # 'high', 'medium', 'low'",
+                ")"
+            ],
+            "description": "Optimized Murf voice generation with connection pooling"
+        },
+        {
+            "prefix": "lang-detect",
+            "body": [
+                "# Advanced language detection",
+                "from services.language_detector import AdvancedLanguageDetector",
+                "",
+                "detector = AdvancedLanguageDetector()",
+                "result = detector.detect_language(${1:text})",
+                "",
+                "print(f\"Language: {result.language}\")",
+                "print(f\"Confidence: {result.confidence:.2%}\")",
+                "print(f\"Method: {result.detection_method}\")",
+                "print(f\"Confident: {result.is_confident}\")"
+            ],
+            "description": "Advanced language detection with confidence scoring"
+        },
+        {
+            "prefix": "monitor-track",
+            "body": [
+                "# Track performance metrics",
+                "from services.performance_analytics import PerformanceMonitor",
+                "",
+                "monitor = PerformanceMonitor()",
+                "",
+                "# Track voice generation",
+                "monitor.track_voice_generation(",
+                "    voice_id=${1:voice_id},",
+                "    language=${2:language},",
+                "    text=${3:text},",
+                "    duration_ms=${4:duration},",
+                "    ttfb_ms=${5:ttfb},",
+                "    audio_size=${6:audio_size},",
+                "    success=True",
+                ")",
+                "",
+                "# Get optimization suggestions",
+                "suggestions = monitor.get_optimization_suggestions()",
+                "for suggestion in suggestions:",
+                "    print(suggestion)"
+            ],
+            "description": "Performance monitoring and tracking"
+        },
+        {
+            "prefix": "phone-ai-handler",
+            "body": [
+                "# Complete phone AI handler with optimizations",
+                "async def handle_customer_response(",
+                "    call_sid: str,",
+                "    customer_speech: str,",
+                "    call_type: str",
+                ") -> bytes:",
+                "    \"\"\"Process customer speech and generate optimized audio response\"\"\"",
+                "    ",
+                "    # 1. Language detection",
+                "    lang_result = detector.detect_language(customer_speech)",
+                "    ",
+                "    # 2. Voice selection",
+                "    voice_selection = router.select_voice(",
+                "        language=lang_result.language,",
+                "        call_context=call_type,",
+                "        language_confidence=lang_result.confidence,",
+                "        previous_voice_id=get_current_voice(call_sid)",
+                "    )",
+                "    ",
+                "    # 3. Generate AI response",
+                "    ai_response = await ai_service.generate_response(",
+                "        customer_speech,",
+                "        call_sid",
+                "    )",
+                "    ",
+                "    # 4. Voice synthesis with optimizations",
+                "    audio = await murf_optimized.generate_streaming_audio_optimized(",
+                "        text=ai_response['text'],",
+                "        language=voice_selection.language,",
+                "        voice_id=voice_selection.voice_id,",
+                "        context_id=call_sid,",
+                "        priority='high'",
+                "    )",
+                "    ",
+                "    # 5. Track performance",
+                "    monitor.update_call_metrics(call_sid, response_time_ms=${1:elapsed})",
+                "    ",
+                "    return audio"
+            ],
+            "description": "Complete optimized phone AI handler"
+        }
+    ]
+}

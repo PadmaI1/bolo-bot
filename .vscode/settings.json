@@ -1,0 +1,62 @@
+{
+    "github.copilot.enable": {
+        "*": true,
+        "python": true,
+        "javascript": true,
+        "html": true,
+        "json": true
+    },
+    "github.copilot.editor.enableAutoCompletions": true,
+    "github.copilot.chat.enabled": true,
+    
+    "python.analysis.extraPaths": [
+        "./services",
+        "./integrations",
+        "./services/azure_core",
+        "./services/real_estate",
+        "./services/sales_copilot"
+    ],
+    
+    "python.analysis.typeCheckingMode": "basic",
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.formatting.provider": "black",
+    
+    "files.associations": {
+        "*.py": "python",
+        "*.md": "markdown"
+    },
+    
+    "editor.suggest.showSnippets": true,
+    "editor.quickSuggestions": {
+        "strings": true,
+        "comments": true,
+        "other": true
+    },
+    
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.pytest_cache": true
+    },
+    
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/__pycache__": true,
+        "**/.pytest_cache": true
+    }
+}
