@@ -123,6 +123,10 @@ class AzureServicesOptimized:
                 else:
                     self.logger.warning(f"⚠️ SLOW LLM: {processing_time:.0f}ms")
                 
+                if not text:
+                    self.logger.error("❌ LLM returned empty text!")
+                    text = "I understand. Let me help you with that."
+                
                 return text
                 
             except Exception as e:

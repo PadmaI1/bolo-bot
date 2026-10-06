@@ -19,14 +19,15 @@ from dotenv import load_dotenv
 import os
 
 # Import optimized services
-from services.websocket_manager import websocket_manager
+# from services.websocket_manager import websocket_manager  # Not needed for phone calls
 from services.audio_processor import AudioProcessor
 from services.azure_services import AzureServicesOptimized
 from services.murf_voice import MurfVoiceOptimized
 from services.murf_websocket_streaming import MurfWebSocketStreaming
-from services.sales_ai import SalesAIEngine
-from services.realestate_ai import RealEstateAIEngine
-from services.conversation_ai import ConversationAI
+# These services use websocket_manager (for browser-based WebSocket, not phone calls)
+# from services.sales_ai import SalesAIEngine
+# from services.realestate_ai import RealEstateAIEngine
+# from services.conversation_ai import ConversationAI
 from services.mock_crm import MockCRMService
 from services.phone_service import TwilioPhoneService
 from services.intelligent_phone_ai import IntelligentPhoneAI
@@ -56,9 +57,10 @@ azure_service: Optional[AzureServicesOptimized] = None
 murf_service: Optional[MurfVoiceOptimized] = None
 murf_ws_streaming: Optional[MurfWebSocketStreaming] = None
 audio_processor: Optional[AudioProcessor] = None
-sales_ai: Optional[SalesAIEngine] = None
-realestate_ai: Optional[RealEstateAIEngine] = None
-conversation_ai: Optional[ConversationAI] = None
+# WebSocket-based services (not used for phone calls)
+# sales_ai: Optional[SalesAIEngine] = None
+# realestate_ai: Optional[RealEstateAIEngine] = None
+# conversation_ai: Optional[ConversationAI] = None
 salesforce_crm: Optional[MockCRMService] = None
 phone_service: Optional[TwilioPhoneService] = None
 intelligent_phone_ai: Optional[IntelligentPhoneAI] = None
@@ -80,7 +82,7 @@ async def lifespan(app: FastAPI):
     """⚡ Lightning-fast startup - NO preprocessing, direct streaming only"""
     logger.info("⚡ Initializing Lightning-Fast B2B Agent (NO preprocessing)...")
     
-    global azure_service, murf_service, murf_ws_streaming, audio_processor, sales_ai, realestate_ai, conversation_ai, salesforce_crm, phone_service, intelligent_phone_ai, ultra_fast_sales, language_detector, sales_agent
+    global azure_service, murf_service, murf_ws_streaming, audio_processor, salesforce_crm, phone_service, intelligent_phone_ai, ultra_fast_sales, language_detector, sales_agent
     
     try:
         # Initialize core services
@@ -108,19 +110,18 @@ async def lifespan(app: FastAPI):
         app_state["service_health"]["audio"] = "healthy"
         logger.info("✅ Audio Processor initialized")
         
-        # Initialize AI engines
-        sales_ai = SalesAIEngine(azure_service, murf_service, websocket_manager)
-        app_state["service_health"]["sales_ai"] = "healthy"
-        logger.info("✅ Sales AI Engine initialized")
+        # WebSocket-based AI engines (commented out - not needed for phone calls)
+        # sales_ai = SalesAIEngine(azure_service, murf_service, websocket_manager)
+        # app_state["service_health"]["sales_ai"] = "healthy"
+        # logger.info("✅ Sales AI Engine initialized")
         
-        realestate_ai = RealEstateAIEngine(azure_service, murf_service, websocket_manager)
-        app_state["service_health"]["realestate_ai"] = "healthy"
-        logger.info("✅ Real Estate AI Engine initialized")
+        # realestate_ai = RealEstateAIEngine(azure_service, murf_service, websocket_manager)
+        # app_state["service_health"]["realestate_ai"] = "healthy"
+        # logger.info("✅ Real Estate AI Engine initialized")
         
-        # Initialize Conversation AI for human-like calls
-        conversation_ai = ConversationAI(azure_service, murf_service, websocket_manager)
-        app_state["service_health"]["conversation_ai"] = "healthy"
-        logger.info("✅ Conversation AI initialized - Ready for human-like calls")
+        # conversation_ai = ConversationAI(azure_service, murf_service, websocket_manager)
+        # app_state["service_health"]["conversation_ai"] = "healthy"
+        # logger.info("✅ Conversation AI initialized - Ready for human-like calls")
         
         # Initialize Intelligent Phone AI
         intelligent_phone_ai = IntelligentPhoneAI(azure_service, murf_ws_streaming)
@@ -183,10 +184,10 @@ async def lifespan(app: FastAPI):
             app_state["service_health"]["phone"] = "offline"
             logger.warning(f"⚠️ Phone service offline: {e}")
         
-        # Register WebSocket handlers
-        websocket_manager.register_handler("audio", handle_audio_message)
-        websocket_manager.register_handler("text", handle_text_message)
-        websocket_manager.register_handler("system", handle_system_message)
+        # Register WebSocket handlers (commented out - for browser WebSocket, not phone calls)
+        # websocket_manager.register_handler("audio", handle_audio_message)
+        # websocket_manager.register_handler("text", handle_text_message)
+        # websocket_manager.register_handler("system", handle_system_message)
         
         # Start background health checks
         health_check_task = asyncio.create_task(periodic_health_check())
@@ -275,296 +276,39 @@ async def real_estate_portal(request: Request):
         "websocket_url": f"ws://{request.headers.get('host', 'localhost')}/ws/real_estate"
     })
 
-# Ultra-optimized WebSocket endpoint
+# Browser WebSocket endpoints (commented out - not needed for phone calls)
 @app.websocket("/ws/{industry}")
 async def websocket_endpoint(websocket: WebSocket, industry: str):
-    """Ultra-low latency WebSocket endpoint for voice interactions"""
-    
-    # Validate industry
-    if industry not in ["sales", "real_estate"]:
-        await websocket.close(code=1008, reason="Invalid industry")
-        return
-    
-    # Generate unique session ID
-    session_id = f"{industry}_{int(datetime.now().timestamp() * 1000)}"
-    app_state["total_sessions"] += 1
-    
-    # Accept connection
-    if not await websocket_manager.connect(websocket, session_id, industry):
-        return
-    
-    app_state["active_sessions"] += 1
-    logger.info(f"🔗 New {industry} session: {session_id}")
-    
-    try:
-        # Initialize industry-specific AI session
-        if industry == "sales":
-            session_result = await sales_ai.initialize_sales_session(session_id, {
-                "meeting_type": "discovery_call",
-                "client_context": "B2B prospect"
-            })
-        else:  # real_estate
-            session_result = await realestate_ai.initialize_realestate_session(session_id, {
-                "lead_source": "voice_ai_call",
-                "language": "english"
-            })
-        
-        # Initialize audio processor for this session
-        await audio_processor.initialize_session(
-            session_id, 
-            lambda sid, audio: process_audio_callback(sid, audio, industry)
-        )
-        
-        # Send session ready signal
-        await websocket_manager.send_message(session_id, {
-            "type": "session_ready",
-            "session_id": session_id,
-            "industry": industry,
-            "initialization": session_result
-        })
-        
-        # Main message loop
-        while True:
-            try:
-                # Receive message (binary or text)
-                message = await websocket.receive()
-                
-                # Check if connection is closing
-                if message["type"] == "websocket.disconnect":
-                    logger.info(f"🔌 Client disconnecting: {session_id}")
-                    break
-                
-                if message["type"] == "websocket.receive":
-                    if "bytes" in message:
-                        # Handle audio data
-                        audio_data = message["bytes"]
-                        await audio_processor.process_audio_chunk(session_id, audio_data)
-                    
-                    elif "text" in message:
-                        # Handle text messages
-                        try:
-                            text_data = json.loads(message["text"])
-                            await websocket_manager.process_text_message(session_id, text_data)
-                        except json.JSONDecodeError:
-                            await websocket_manager.send_message(session_id, {
-                                "type": "error",
-                                "message": "Invalid JSON format"
-                            })
-                
-            except WebSocketDisconnect:
-                logger.info(f"🔌 Client disconnected: {session_id}")
-                break
-            except RuntimeError as e:
-                # Handle "Cannot call receive once a disconnect message has been received"
-                if "disconnect" in str(e).lower():
-                    logger.info(f"🔌 WebSocket already disconnected: {session_id}")
-                    break
-                else:
-                    logger.error(f"❌ WebSocket runtime error: {e}")
-                    break
-            except Exception as e:
-                logger.error(f"❌ WebSocket message error: {e}")
-                # Break on any error to prevent infinite loops
-                break
-    
-    except Exception as e:
-        logger.error(f"❌ WebSocket session error: {e}")
-    
-    finally:
-        # Cleanup session
-        await cleanup_session(session_id, industry)
-        app_state["active_sessions"] = max(0, app_state["active_sessions"] - 1)
-        logger.info(f"🧹 Session cleanup completed: {session_id}")
+    """Disabled - Use phone call endpoints instead"""
+    await websocket.close(code=1008, reason="Use phone call endpoints")
+    return
 
+# Disabled WebSocket handlers (not needed for phone calls)
 async def process_audio_callback(session_id: str, processed_audio: bytes, industry: str):
-    """Callback for processed audio from audio processor"""
-    try:
-        start_time = datetime.now()
-        
-        # Transcribe audio using Azure STT
-        transcription_result = await azure_service.transcribe_audio_optimized(
-            processed_audio,
-            language="auto"
-        )
-        
-        if not transcription_result.get("text"):
-            return  # No speech detected
-        
-        # Send transcription to frontend immediately
-        await websocket_manager.send_message(session_id, {
-            "type": "transcription",
-            "data": transcription_result
-        })
-        
-        # Process with industry-specific AI
-        if industry == "sales":
-            ai_response = await sales_ai.process_sales_conversation(session_id, transcription_result)
-            await websocket_manager.send_message(session_id, {
-                "type": "sales_coaching",
-                "data": ai_response
-            })
-            
-            # Sync to CRM if configured
-            if salesforce_crm and ai_response.get("session_metrics"):
-                asyncio.create_task(sync_to_crm_background(session_id, ai_response, "sales"))
-        
-        else:  # real_estate
-            ai_response = await realestate_ai.process_realestate_conversation(session_id, transcription_result)
-            await websocket_manager.send_message(session_id, {
-                "type": "realestate_qualification",
-                "data": ai_response
-            })
-            
-            # Sync to CRM if qualified lead
-            if salesforce_crm and ai_response.get("qualification_score", 0) >= 6:
-                asyncio.create_task(sync_to_crm_background(session_id, ai_response, "real_estate"))
-        
-        # Generate voice response if AI provided one
-        if ai_response.get("voice_audio"):
-            await websocket_manager.broadcast_audio_response(
-                session_id, 
-                ai_response["voice_audio"],
-                ai_response.get("response_strategy", {}).get("response_text", "")
-            )
-        
-        # Log performance
-        processing_time = (datetime.now() - start_time).total_seconds() * 1000
-        logger.debug(f"⚡ Audio processing completed in {processing_time:.1f}ms")
-        
-    except Exception as e:
-        logger.error(f"❌ Audio callback error: {e}")
-        await websocket_manager.send_message(session_id, {
-            "type": "error",
-            "message": "Audio processing failed"
-        })
+    """Disabled - Use phone call endpoints"""
+    pass
 
 async def handle_audio_message(session_id: str, audio_data: bytes):
-    """Handle raw audio message"""
-    # This is handled by the audio processor callback
+    """Disabled - Use phone call endpoints"""
     pass
 
 async def handle_text_message(session_id: str, message: Dict[str, Any]):
-    """Handle text-based messages"""
-    try:
-        message_type = message.get("message_type", "unknown")
-        
-        if message_type == "manual_input":
-            # Handle manual text input as if it were transcription
-            text_content = message.get("content", "")
-            fake_transcription = {
-                "text": text_content,
-                "confidence": 1.0,
-                "speaker_detected": "customer"
-            }
-            
-            # Determine industry from session
-            session_info = websocket_manager.get_session_info(session_id)
-            if session_info:
-                industry = session_info["industry"]
-                await process_audio_callback(session_id, b"", industry)  # Process as if audio
-        
-        elif message_type == "request_summary":
-            # Generate session summary
-            summary = await generate_session_summary(session_id)
-            await websocket_manager.send_message(session_id, {
-                "type": "session_summary",
-                "data": summary
-            })
-        
-        elif message_type == "change_language":
-            # Handle language change for real estate
-            new_language = message.get("language", "english")
-            session_info = websocket_manager.get_session_info(session_id)
-            
-            if session_info and session_info["industry"] == "real_estate":
-                # Update language preference in real estate AI
-                # This would update the session language preference
-                await websocket_manager.send_message(session_id, {
-                    "type": "language_changed",
-                    "language": new_language
-                })
-    
-    except Exception as e:
-        logger.error(f"❌ Text message handling error: {e}")
+    """Disabled - Use phone call endpoints"""
+    pass
 
 async def handle_system_message(session_id: str, message: Dict[str, Any]):
-    """Handle system control messages"""
-    try:
-        command = message.get("command", "")
-        
-        if command == "pause_session":
-            # Pause audio processing
-            await websocket_manager.send_message(session_id, {
-                "type": "session_paused"
-            })
-        
-        elif command == "resume_session":
-            # Resume audio processing
-            await websocket_manager.send_message(session_id, {
-                "type": "session_resumed"
-            })
-        
-        elif command == "get_performance":
-            # Get performance metrics
-            performance_data = await get_session_performance(session_id)
-            await websocket_manager.send_message(session_id, {
-                "type": "performance_data",
-                "data": performance_data
-            })
-    
-    except Exception as e:
-        logger.error(f"❌ System message handling error: {e}")
-
-async def get_session_performance(session_id: str) -> Dict[str, Any]:
-    """Get performance metrics for a session"""
-    try:
-        session_info = websocket_manager.get_session_info(session_id)
-        if not session_info:
-            return {"error": "Session not found"}
-        
-        # Calculate session duration
-        connected_at_str = session_info.get("connected_at")
-        if connected_at_str:
-            connected_at = datetime.fromisoformat(connected_at_str)
-            duration_seconds = (datetime.now() - connected_at).total_seconds()
-        else:
-            duration_seconds = 0
-        
-        # Get latency statistics
-        latency_stats = websocket_manager.latency_stats
-        
-        return {
-            "session_id": session_id,
-            "duration_seconds": duration_seconds,
-            "message_count": session_info.get("message_count", 0),
-            "latency": {
-                "avg_audio_received": sum(latency_stats["audio_received"][-10:]) / min(len(latency_stats["audio_received"]), 10) if latency_stats["audio_received"] else 0,
-                "avg_processing_time": sum(latency_stats["processing_time"][-10:]) / min(len(latency_stats["processing_time"]), 10) if latency_stats["processing_time"] else 0,
-                "avg_response_sent": sum(latency_stats["response_sent"][-10:]) / min(len(latency_stats["response_sent"]), 10) if latency_stats["response_sent"] else 0
-            },
-            "last_activity": session_info.get("last_activity"),
-            "buffer_size": session_info.get("buffer_size", 0),
-            "queue_size": session_info.get("queue_size", 0)
-        }
-    except Exception as e:
-        logger.error(f"Error getting session performance: {e}")
-        return {"error": str(e)}
+    """Disabled - Use phone call endpoints"""
+    pass
 
 async def cleanup_session(session_id: str, industry: str):
-    """Comprehensive session cleanup"""
+    """Simplified session cleanup for phone calls"""
     try:
-        # Finalize AI sessions
-        if industry == "sales" and sales_ai:
-            final_summary = await sales_ai.finalize_session(session_id)
-        elif industry == "real_estate" and realestate_ai:
-            final_summary = await realestate_ai.finalize_session(session_id)
-        
-        # Cleanup audio processor
+        # Cleanup audio processor if available
         if audio_processor:
-            await audio_processor.finalize_session(session_id)
-        
-        # Disconnect from WebSocket manager
-        await websocket_manager.disconnect(session_id)
+            try:
+                await audio_processor.finalize_session(session_id)
+            except:
+                pass  # Ignore if method doesn't exist
         
         logger.info(f"✅ Session cleanup completed: {session_id}")
         
@@ -572,13 +316,9 @@ async def cleanup_session(session_id: str, industry: str):
         logger.error(f"❌ Session cleanup error: {e}")
 
 async def sync_to_crm_background(session_id: str, ai_response: Dict[str, Any], industry: str):
-    """Background task for CRM synchronization"""
+    """Background task for CRM synchronization - Simplified for phone calls"""
     try:
         if not salesforce_crm:
-            return
-        
-        session_info = websocket_manager.get_session_info(session_id)
-        if not session_info:
             return
         
         # Prepare CRM data based on industry
@@ -592,12 +332,6 @@ async def sync_to_crm_background(session_id: str, ai_response: Dict[str, Any], i
                 {"session_id": session_id, "phone": "9876543210"},  # Mock data
                 ai_response.get("qualification_update", {})
             )
-        
-        # Send CRM sync status to client
-        await websocket_manager.send_message(session_id, {
-            "type": "crm_sync_status",
-            "data": crm_result
-        })
         
         logger.info(f"✅ CRM sync completed for {session_id}: {crm_result.get('status')}")
         
@@ -754,31 +488,18 @@ async def get_session_summary(session_id: str):
         }
 
 async def generate_session_summary(session_id: str) -> Dict[str, Any]:
-    """Generate comprehensive session summary"""
+    """Generate simplified session summary for phone calls"""
     try:
-        # Get session info from WebSocket manager
-        session_info = websocket_manager.get_session_info(session_id)
-        if not session_info:
-            return {"error": "Session not found"}
-        
-        industry = session_info["industry"]
-        
-        # Get AI session summary
-        if industry == "sales" and sales_ai:
-            ai_summary = await sales_ai.get_session_summary(session_id)
-        elif industry == "real_estate" and realestate_ai:
-            ai_summary = await realestate_ai.get_session_summary(session_id)
-        else:
-            ai_summary = {"error": "AI service unavailable"}
-        
-        # Get audio processing stats
+        # Basic summary for phone calls
         audio_stats = {}
         if audio_processor:
-            audio_stats = await audio_processor.get_session_stats(session_id)
+            try:
+                audio_stats = await audio_processor.get_session_stats(session_id)
+            except:
+                pass  # Ignore if method doesn't exist
         
         return {
-            "session_info": session_info,
-            "ai_summary": ai_summary,
+            "session_id": session_id,
             "audio_processing": audio_stats,
             "generated_at": datetime.now().isoformat()
         }
@@ -986,182 +707,47 @@ async def debug_murf():
 @app.post("/api/demo/start-call")
 async def start_demo_call(request: Request):
     """
-    Start a demo outbound call (B2B Sales or Real Estate)
-    This endpoint showcases Murf AI's human-like voice capabilities
+    Start a demo outbound call (B2B Sales or Real Estate) - DISABLED
     """
-    try:
-        data = await request.json()
-        
-        call_type = data.get("call_type", "b2b_sales")  # b2b_sales or real_estate
-        session_id = data.get("session_id", f"demo_{datetime.now().timestamp()}")
-        
-        lead_info = data.get("lead_info", {
-            "name": "John Smith",
-            "company": "TechCorp Inc",
-            "interested_in": "CRM solution"
-        })
-        
-        # Start the outbound call
-        result = await conversation_ai.start_outbound_call(
-            session_id=session_id,
-            call_type=call_type,
-            lead_info=lead_info
-        )
-        
-        logger.info(f"Demo call started: {call_type} for {lead_info.get('name')}")
-        
-        return JSONResponse({
-            "status": "success",
-            "message": "Call started successfully",
-            "data": result
-        })
-        
-    except Exception as e:
-        logger.error(f"Demo call start error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=503, detail="Demo endpoints disabled - use phone call endpoints instead")
 
 
 @app.post("/api/demo/respond")
 async def demo_respond(request: Request):
     """
-    Handle prospect's response in the demo call
-    Shows AI's intelligent conversation capabilities
+    Handle prospect's response in the demo call - DISABLED
     """
-    try:
-        data = await request.json()
-        
-        session_id = data.get("session_id")
-        prospect_message = data.get("message", "")
-        
-        if not session_id or not prospect_message:
-            raise HTTPException(status_code=400, detail="session_id and message required")
-        
-        # Generate AI response
-        result = await conversation_ai.handle_prospect_response(
-            session_id=session_id,
-            prospect_message=prospect_message
-        )
-        
-        logger.info(f"AI responded in session {session_id}")
-        
-        return JSONResponse({
-            "status": "success",
-            "data": result
-        })
-        
-    except Exception as e:
-        logger.error(f"Demo respond error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=503, detail="Demo endpoints disabled - use phone call endpoints instead")
 
 
 @app.get("/api/demo/conversation/{session_id}")
 async def get_demo_conversation(session_id: str):
     """
-    Get complete conversation summary for demo purposes
+    Get complete conversation summary for demo purposes - DISABLED
     """
-    try:
-        summary = await conversation_ai.get_conversation_summary(session_id)
-        
-        return JSONResponse({
-            "status": "success",
-            "data": summary
-        })
-        
-    except Exception as e:
-        logger.error(f"Get conversation error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=503, detail="Demo endpoints disabled - use phone call endpoints instead")
 
 
 @app.post("/api/demo/close-call/{session_id}")
 async def close_demo_call(session_id: str):
     """
-    Close and summarize the demo call
+    Close and summarize the demo call - DISABLED
     """
-    try:
-        result = await conversation_ai.close_conversation(session_id)
-        
-        logger.info(f"Demo call closed: {session_id}")
-        
-        return JSONResponse({
-            "status": "success",
-            "data": result
-        })
-        
-    except Exception as e:
-        logger.error(f"Close call error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    raise HTTPException(status_code=503, detail="Demo endpoints disabled - use phone call endpoints instead")
+
 
 
 @app.websocket("/ws/demo-call/{session_id}")
 async def demo_call_websocket(websocket: WebSocket, session_id: str):
     """
-    Real-time WebSocket for live demo calls
-    Low-latency bidirectional communication for voice
+    Real-time WebSocket for live demo calls - DISABLED
     """
     await websocket.accept()
-    logger.info(f"Demo WebSocket connected: {session_id}")
-    
-    try:
-        while True:
-            try:
-                # Receive message from frontend
-                message = await websocket.receive_json()
-                
-                msg_type = message.get("type")
-                
-                if msg_type == "start_call":
-                    # Start outbound call
-                    result = await conversation_ai.start_outbound_call(
-                        session_id=session_id,
-                        call_type=message.get("call_type", "b2b_sales"),
-                        lead_info=message.get("lead_info", {})
-                    )
-                    
-                    await websocket.send_json({
-                        "type": "call_started",
-                        "data": result
-                    })
-                    
-                elif msg_type == "prospect_response":
-                    # Handle prospect's response
-                    result = await conversation_ai.handle_prospect_response(
-                        session_id=session_id,
-                        prospect_message=message.get("message", "")
-                    )
-                    
-                    await websocket.send_json({
-                        "type": "ai_response",
-                        "data": result
-                    })
-                    
-                elif msg_type == "close_call":
-                    # Close the call
-                    result = await conversation_ai.close_conversation(session_id)
-                    
-                    await websocket.send_json({
-                        "type": "call_closed",
-                        "data": result
-                    })
-                    break
-                    
-            except RuntimeError as e:
-                if "disconnect" in str(e).lower():
-                    logger.info(f"Demo WebSocket already disconnected: {session_id}")
-                    break
-                raise
-                
-    except WebSocketDisconnect:
-        logger.info(f"Demo WebSocket disconnected: {session_id}")
-    except Exception as e:
-        logger.error(f"Demo WebSocket error: {e}")
-        try:
-            await websocket.send_json({
-                "type": "error",
-                "message": str(e)
-            })
-        except:
-            # Websocket already closed, ignore
-            pass
+    await websocket.send_json({
+        "type": "error",
+        "message": "Demo WebSocket disabled - use phone call endpoints instead"
+    })
+    await websocket.close()
 
 # =========================
 # Phone Call Endpoints (Real Telephony)
@@ -1382,39 +968,38 @@ async def process_speech(call_type: str, request: Request):
         sentiment = sales_agent.analyze_customer_sentiment(speech_result)
         logger.info(f"💭 Sentiment: {sentiment}")
         
-        # 4. Generate AI response (concurrent with preparation)
+        # 4. Generate AI response - FIXED: Better prompt structure
         ai_task = asyncio.create_task(
             azure_service.generate_text_lightning(
                 messages=[
-                    {"role": "system", "content": f"""You are {persona.name}, an experienced B2B sales expert with {persona.experience}.
-                    
+                    {"role": "system", "content": f"""You are {persona.name}, {persona.experience} B2B sales expert.
+
 Personality: {', '.join(persona.traits)}
-Language: Mix {language.title()} and English naturally (code-switching for Indian customers)
-Tone: Warm, consultative, professional
-Goal: Build rapport, understand needs, offer solutions
+Language: Mix {language.title()}/English naturally
+Tone: Warm, consultative
+Sentiment: Customer is {sentiment}
 
-Customer sentiment: {sentiment}
-Call type: {call_type}
-
-Instructions:
-- Use customer's name "Arjun" frequently
-- Acknowledge concerns immediately
-- Ask discovery questions (SPIN selling)
-- Mix Hindi/English naturally if Hindi detected
-- Be consultative, not pushy
-- Keep responses conversational (2-3 sentences max)
-- Use natural transitions: "bilkul ji", "aap dekho", "exactly"
-
-Respond naturally to: {speech_result}"""},
-                    {"role": "user", "content": speech_result}
+RULES:
+1. ALWAYS respond with actual content (never empty!)
+2. Keep SHORT (1-2 sentences max)
+3. Use "Arjun" occasionally
+4. Be natural and conversational
+5. If Hindi detected, mix Hindi/English phrases"""},
+                    {"role": "user", "content": f"Customer just said: \"{speech_result}\"\n\nYour response (1-2 sentences):"}
                 ],
-                max_tokens=100,  # Shorter for speed
-                temperature=0.7   # Natural conversation
+                max_tokens=150,  # Increased for better responses
+                temperature=0.8   # More natural
             )
         )
         
         # 5. Get AI response
         ai_response = await ai_task
+        
+        if not ai_response or ai_response.strip() == "":
+            logger.error("❌ Empty AI response received")
+            ai_response = "I understand. Let me help you with that. Can you tell me more?"
+        
+        logger.info(f"🤖 AI Response ({len(ai_response)} chars): {ai_response}")
         
         # Enhance response for native speaker
         enhanced_response = ultra_fast_sales.enhance_response_for_native_speaker(
@@ -1423,7 +1008,7 @@ Respond naturally to: {speech_result}"""},
             speech_result
         )
         
-        logger.info(f"🤖 AI Response: {enhanced_response}")
+        logger.info(f"✨ Enhanced Response ({len(enhanced_response)} chars): {enhanced_response}")
         logger.info(f"🎙️ Using PREMIUM voice: {voice_id}")
         
         # 6. Generate audio with ULTRA-FAST streaming
