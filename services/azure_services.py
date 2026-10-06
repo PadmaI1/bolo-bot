@@ -87,6 +87,49 @@ class AzureServicesOptimized:
                 self.logger.error(f"❌ LLM generation failed: {e}")
                 raise
     
+    async def generate_text_lightning(self, messages: List[Dict[str, str]], temperature: float = 0.7, max_tokens: int = 100) -> str:
+        """
+        ⚡ LIGHTNING-FAST text generation for ultra-fast phone responses
+        Target: <500ms response time
+        
+        Args:
+            messages: List of message dicts with 'role' and 'content'
+            temperature: Creativity (0-1)
+            max_tokens: Maximum response length (optimized for phone calls)
+            
+        Returns:
+            Generated text string
+        """
+        async with self.request_semaphore:
+            try:
+                start_time = time.time()
+                
+                response = await self.client.chat.completions.create(
+                    model=self.model_deployment,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,  # Shorter for faster response
+                    top_p=0.9,              # Slightly lower for speed
+                    frequency_penalty=0,
+                    presence_penalty=0
+                )
+                
+                text = response.choices[0].message.content.strip() if response.choices[0].message.content else ""
+                processing_time = (time.time() - start_time) * 1000
+                
+                # Log performance for optimization
+                if processing_time < 500:
+                    self.logger.info(f"⚡ LIGHTNING LLM: {processing_time:.0f}ms ✅")
+                else:
+                    self.logger.warning(f"⚠️ SLOW LLM: {processing_time:.0f}ms")
+                
+                return text
+                
+            except Exception as e:
+                self.logger.error(f"❌ Lightning LLM failed: {e}")
+                # Fast fallback response
+                return "I understand. Let me help you with that. Can you tell me more?"
+    
     async def transcribe_audio_optimized(self, audio_data: bytes, language: str = "en") -> Dict[str, Any]:
         """Ultra-fast audio transcription with Azure STT"""
         async with self.request_semaphore:
