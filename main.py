@@ -34,6 +34,7 @@ from services.intelligent_phone_ai import IntelligentPhoneAI
 # ⚡ NEW: Ultra-fast native sales with premium voices
 from services.ultra_fast_native_sales import UltraFastNativeSales, ExperiencedSalesAgent
 from services.lightning_language_detector import LightningLanguageDetector
+from services.email_service import EmailService
 # from services.salesforce_crm import SalesforceIntegration  # Uncomment when ready to use Salesforce
 
 load_dotenv()
@@ -68,6 +69,7 @@ intelligent_phone_ai: Optional[IntelligentPhoneAI] = None
 ultra_fast_sales: Optional[UltraFastNativeSales] = None
 language_detector: Optional[LightningLanguageDetector] = None
 sales_agent: Optional[ExperiencedSalesAgent] = None
+email_service: Optional[EmailService] = None
 
 # Application state
 app_state = {
@@ -294,12 +296,209 @@ def _generate_smart_fallback(call_type: str, customer_speech: str, intent: str) 
         else:
             return "Perfect! Are you looking for a property for your own residence or investment purposes? And what's your budget range?"
 
+# 🆕 Call Summary and CRM Processing
+call_summaries: Dict[str, Any] = {}  # Store call summaries for dashboard
+
+async def _process_call_completion(call_sid: str, call_type: str, conversation_history: list, call_duration: int):
+    """Process call completion, update CRM, and send email"""
+    try:
+        logger.info(f"📊 Processing call completion: {call_sid} ({call_type})")
+        
+        # Generate call summary
+        summary = _generate_call_summary(conversation_history, call_type, call_duration)
+        
+        # Update CRM based on call type
+        if call_type == "b2b_sales":
+            crm_result = await _update_sales_crm(call_sid, summary)
+        else:  # real_estate
+            crm_result = await _update_real_estate_crm(call_sid, summary)
+        
+        # 📧 Get customer email from lead_info (dynamic from form)
+        customer_email = None
+        customer_name = "Customer"
+        
+        if phone_service and call_sid in phone_service.active_calls:
+            lead_info = phone_service.active_calls[call_sid].get("lead_info", {})
+            customer_email = lead_info.get("email")
+            customer_name = lead_info.get("name", "Customer")
+        
+        # Fallback to .env if email not in form (backward compatibility)
+        if not customer_email:
+            customer_email = os.getenv("CUSTOMER_EMAIL", "customer@example.com")
+            logger.warning(f"⚠️ No email in lead_info, using .env: {customer_email}")
+        
+        # Send email summary to customer
+        if email_service and email_service.enabled and customer_email:
+            try:
+                if call_type == "b2b_sales":
+                    email_sent = await email_service.send_sales_summary_email(
+                        recipient_email=customer_email,
+                        recipient_name=customer_name,
+                        call_summary=summary
+                    )
+                else:  # real_estate
+                    email_sent = await email_service.send_real_estate_summary_email(
+                        recipient_email=customer_email,
+                        recipient_name=customer_name,
+                        call_summary=summary
+                    )
+                
+                if email_sent:
+                    logger.info(f"✅ Email sent to {customer_email} for call {call_sid}")
+                    summary["email_sent"] = True
+                else:
+                    logger.warning(f"⚠️ Email failed to send for call {call_sid}")
+                    summary["email_sent"] = False
+            except Exception as e:
+                logger.error(f"❌ Email error for call {call_sid}: {e}")
+                summary["email_sent"] = False
+        else:
+            logger.warning("⚠️ Email service not available")
+            summary["email_sent"] = False
+        
+        # Store for dashboard display
+        call_summaries[call_sid] = {
+            "summary": summary,
+            "crm_update": crm_result,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        logger.info(f"✅ Call {call_sid} processed successfully - Lead Score: {summary.get('lead_score', summary.get('qualification_score', 0))}")
+        
+    except Exception as e:
+        logger.error(f"❌ Call processing failed for {call_sid}: {e}")
+
+def _generate_call_summary(conversation_history: list, call_type: str, duration: int) -> Dict[str, Any]:
+    """Generate intelligent call summary"""
+    if not conversation_history:
+        return {"status": "no_conversation", "duration": duration, "call_type": call_type}
+    
+    customer_responses = [msg for msg in conversation_history if msg.get("role") == "customer"]
+    
+    if call_type == "b2b_sales":
+        # Sales-specific analysis
+        response_text = " ".join([r.get("text", "").lower() for r in customer_responses])
+        
+        # Analyze interest level
+        if any(word in response_text for word in ["interested", "yes", "demo", "show me"]):
+            interest_level = "high"
+        elif any(word in response_text for word in ["maybe", "think", "later"]):
+            interest_level = "medium"
+        else:
+            interest_level = "low"
+        
+        # Extract use case
+        if "audiobook" in response_text:
+            use_case = "audiobooks"
+        elif "elearning" in response_text or "training" in response_text:
+            use_case = "e-learning"
+        elif "marketing" in response_text:
+            use_case = "marketing"
+        else:
+            use_case = "general"
+        
+        lead_score = 8 if interest_level == "high" else 5 if interest_level == "medium" else 2
+        
+        return {
+            "call_type": "B2B Sales",
+            "duration_seconds": duration,
+            "interest_level": interest_level,
+            "use_case": use_case,
+            "total_exchanges": len(customer_responses),
+            "next_steps": f"Follow up on {use_case} demo" if interest_level == "high" else "Send email with case studies",
+            "lead_score": lead_score,
+            "customer_sentiment": "interested" if interest_level == "high" else "neutral"
+        }
+    
+    else:  # real_estate
+        response_text = " ".join([r.get("text", "").lower() for r in customer_responses])
+        
+        # Extract budget
+        budget_range = "₹60L-1.2Cr" if "lakh" in response_text or "crore" in response_text else "not_specified"
+        
+        # Extract location
+        if "gachibowli" in response_text:
+            location = "Gachibowli"
+        elif "hitec" in response_text:
+            location = "Hitec City"
+        elif "jubilee" in response_text:
+            location = "Jubilee Hills"
+        else:
+            location = "any"
+        
+        # Extract property type
+        if "2bhk" in response_text or "2 bhk" in response_text:
+            property_type = "2BHK"
+        elif "3bhk" in response_text or "3 bhk" in response_text:
+            property_type = "3BHK"
+        elif "villa" in response_text:
+            property_type = "Villa"
+        else:
+            property_type = "not_specified"
+        
+        qualification_score = 0
+        if budget_range != "not_specified": qualification_score += 3
+        if location != "any": qualification_score += 3
+        if property_type != "not_specified": qualification_score += 4
+        
+        return {
+            "call_type": "Real Estate",
+            "duration_seconds": duration,
+            "budget_range": budget_range,
+            "location_preference": location,
+            "property_type": property_type,
+            "qualification_score": qualification_score,
+            "next_steps": "Schedule site visit" if qualification_score >= 7 else "Send WhatsApp property details",
+            "total_exchanges": len(customer_responses)
+        }
+
+async def _update_sales_crm(call_sid: str, summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Update CRM with sales call data"""
+    lead_data = {
+        "call_sid": call_sid,
+        "lead_name": "Arjun Mehta",
+        "company": "Anurag University",
+        "interest_level": summary.get("interest_level", "low"),
+        "use_case": summary.get("use_case", "general"),
+        "lead_score": summary.get("lead_score", 0),
+        "next_followup": datetime.now().strftime("%Y-%m-%d"),
+        "notes": f"Interested in {summary.get('use_case')} use case. Call duration: {summary.get('duration_seconds')}s"
+    }
+    
+    if salesforce_crm:
+        result = await salesforce_crm.sync_sales_call_data(lead_data, summary)
+        logger.info(f"✅ CRM updated for sales call: {call_sid}")
+        return result
+    
+    return {"status": "crm_not_available"}
+
+async def _update_real_estate_crm(call_sid: str, summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Update CRM with real estate call data"""
+    lead_data = {
+        "call_sid": call_sid,
+        "lead_name": "Arjun Mehta",
+        "phone": "+916397983037",
+        "budget_range": summary.get("budget_range", "not_specified"),
+        "location_preference": summary.get("location_preference", "any"),
+        "property_type": summary.get("property_type", "not_specified"),
+        "qualification_score": summary.get("qualification_score", 0),
+        "next_followup": datetime.now().strftime("%Y-%m-%d"),
+        "notes": f"Budget: {summary.get('budget_range')}, Location: {summary.get('location_preference')}"
+    }
+    
+    if salesforce_crm:
+        result = await salesforce_crm.sync_real_estate_lead(lead_data, summary)
+        logger.info(f"✅ CRM updated for real estate call: {call_sid}")
+        return result
+    
+    return {"status": "crm_not_available"}
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """⚡ Lightning-fast startup - NO preprocessing, direct streaming only"""
     logger.info("⚡ Initializing Lightning-Fast B2B Agent (NO preprocessing)...")
     
-    global azure_service, murf_service, murf_ws_streaming, audio_processor, salesforce_crm, phone_service, intelligent_phone_ai, ultra_fast_sales, language_detector, sales_agent
+    global azure_service, murf_service, murf_ws_streaming, audio_processor, salesforce_crm, phone_service, intelligent_phone_ai, ultra_fast_sales, language_detector, sales_agent, email_service
     
     try:
         # Initialize core services
@@ -387,6 +586,13 @@ async def lifespan(app: FastAPI):
                 salesforce_crm = MockCRMService()
                 await salesforce_crm.initialize()
                 app_state["service_health"]["crm"] = "healthy"
+
+        # Initialize Email Service (for call summaries)
+        try:
+            email_service = EmailService()
+            logger.info("✅ Email service initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ Email service unavailable: {e}")
 
         # Initialize Phone Service (Twilio)
         try:
@@ -576,24 +782,29 @@ async def health_check():
 
 @app.get("/api/performance")
 async def get_performance_metrics():
-    """Get platform performance metrics"""
+    """Get platform performance metrics - ✅ FIXED: Removed websocket_manager"""
     try:
-        websocket_stats = await websocket_manager.get_performance_stats()
-        
         # Murf service stats
         murf_stats = {}
         if murf_service:
-            murf_stats = await murf_service.get_performance_stats()
+            murf_stats = murf_service.get_stats() if hasattr(murf_service, 'get_stats') else {}
         
         # Salesforce stats
         salesforce_stats = {}
         if salesforce_crm:
             salesforce_stats = await salesforce_crm.get_sync_statistics()
         
+        # Call summaries
+        call_stats = {
+            "total_calls": len(call_summaries),
+            "recent_calls": len([c for c in call_summaries.values() 
+                               if (datetime.now() - datetime.fromisoformat(c["timestamp"])).seconds < 3600])
+        }
+        
         return {
             "status": "success",
             "timestamp": datetime.now().isoformat(),
-            "websocket_performance": websocket_stats,
+            "call_performance": call_stats,
             "voice_generation": murf_stats,
             "crm_integration": salesforce_stats,
             "platform_health": app_state["service_health"]
@@ -605,14 +816,15 @@ async def get_performance_metrics():
 
 @app.get("/api/analytics/dashboard")
 async def get_analytics_dashboard():
-    """Get analytics dashboard data"""
+    """Get analytics dashboard data - ✅ FIXED: Removed websocket_manager dependency"""
     try:
         # Calculate uptime
         uptime = datetime.now() - app_state["startup_time"]
         uptime_seconds = int(uptime.total_seconds())
         
-        # Get websocket stats
-        websocket_stats = await websocket_manager.get_performance_stats()
+        # Get call summaries for dashboard
+        total_calls = len(call_summaries)
+        recent_calls = list(call_summaries.values())[-10:]  # Last 10 calls
         
         # Get CRM stats
         crm_stats = {}
@@ -631,7 +843,16 @@ async def get_analytics_dashboard():
                 "total": app_state["total_sessions"],
                 "active": app_state["active_sessions"]
             },
-            "websocket": websocket_stats,
+            "analytics": {
+                "total_sessions": app_state["total_sessions"],
+                "active_sessions": app_state["active_sessions"],
+                "avg_session_duration": "5min",  # Mock data
+                "voice_quality_score": "9.2/10"  # Mock data
+            },
+            "calls": {
+                "total": total_calls,
+                "recent": recent_calls
+            },
             "crm": crm_stats,
             "timestamp": datetime.now().isoformat()
         }
@@ -1069,18 +1290,19 @@ async def generate_twiml(call_type: str, request: Request):
             "property_interest": "Hyderabad" if call_type == "real_estate" else None
         }
         
-        # ⭐ OPTIMIZED: Use pre-crafted bilingual opening messages (FASTER than AI generation)
-        opening_prompts = {
-            "b2b_sales": "Hi Arjun, main Shaan hun Murf AI se. Aapka voice content production 80% faster kar sakta hun. 2 minutes hai?",
-            "real_estate": "Namaste Arjun, main Shaan, property consultant. Aapke liye perfect property mili hai Hyderabad mein. Baat kar sakte hain?"
-        }
-        
-        # Use Shaan - premium bilingual voice
-        voice_id = "hi-IN-shaan"
-        opening_text = opening_prompts.get(call_type, opening_prompts["b2b_sales"])
+        # ⭐ OPTIMIZED: Agent-specific voices and opening messages
+        if call_type == "real_estate":
+            # Real Estate uses Rohan (different voice persona)
+            voice_id = "en-IN-rohan"  # ✅ FIXED: English-Hindi bilingual voice
+            opening_text = "Namaste Arjun! Main Rohan Reddy hun JK Ventures se. Hyderabad mein aapke liye kuch premium properties hai Gachibowli aur Hitec City mein. 2 minutes baat kar sakte hain?"
+        else:  # b2b_sales
+            # B2B Sales uses Shaan (premium bilingual voice)
+            voice_id = "hi-IN-shaan"
+            opening_text = "Hi Arjun, main Shaan hun Murf AI se. Aapka voice content production 80% faster kar sakta hun. 2 minutes hai?"
         
         logger.info(f"🤖 Optimized Bilingual Opening: {opening_text}")
         logger.info(f"🎙️ Using Premium Bilingual Voice: {voice_id} (Shaan)")
+
         
         # Generate Murf audio using WebSocket streaming (fast!)
         audio_path = await murf_ws_streaming.generate_and_save_for_twilio(
@@ -1174,9 +1396,14 @@ async def process_speech(call_type: str, request: Request):
         language = lang_result.language
         logger.info(f"⚡ Language detected: {language} in {lang_result.detection_time_ms:.1f}ms")
         
-        # 2. ⭐ Use SHAAN - Premium bilingual voice for Hindi/English
-        voice_id = get_optimal_bilingual_voice(language, call_type, gender="male")
-        logger.info(f"🎙️ Using PREMIUM BILINGUAL voice: {voice_id} (Shaan - perfect for Hindi/English mixing)")
+        # 2. ⭐ Agent-specific voice selection
+        if call_type == "real_estate":
+            voice_id = "en-IN-rohan"  # ✅ FIXED: Rohan for Real Estate (English-Hindi)
+            logger.info(f"🎙️ Using ROHAN voice: {voice_id} (Real Estate Consultant)")
+        else:  # b2b_sales
+            voice_id = "hi-IN-shaan"  # Shaan for B2B Sales
+            logger.info(f"🎙️ Using SHAAN voice: {voice_id} (B2B Sales Expert)")
+
         
         # 3. Analyze customer sentiment (fast, no AI)
         sentiment = sales_agent.analyze_customer_sentiment(speech_result)
@@ -1290,8 +1517,8 @@ Example good responses:
 CRITICAL: Base your response on what they ACTUALLY said, not generic acknowledgments."""
 
         else:  # real_estate
-            # Shaan - Bilingual property consultant
-            system_prompt = f"""You are Shaan, a senior property consultant at JK Ventures Hyderabad with 12+ years experience.
+            # Rohan Reddy - Bilingual property consultant (different persona)
+            system_prompt = f"""You are Rohan Reddy, a senior property consultant at JK Ventures Hyderabad with 12+ years experience.
 
 YOUR EXPERTISE: Hyderabad Real Estate
 - Premium properties in Gachibowli, Hitec City, Jubilee Hills, Banjara Hills
@@ -1515,6 +1742,7 @@ async def call_status_webhook(request: Request):
         form_data = await request.form()
         call_sid = form_data.get("CallSid")
         call_status = form_data.get("CallStatus")
+        call_duration = form_data.get("CallDuration", "0")
         
         logger.info(f"Call status update - SID: {call_sid}, Status: {call_status}")
         
@@ -1525,6 +1753,18 @@ async def call_status_webhook(request: Request):
                 # Log call completion
                 phone_service.active_calls[call_sid]["end_time"] = datetime.now()
                 logger.info(f"Call completed: {call_sid}")
+                
+                # 🆕 Process after-call CRM update
+                call_info = phone_service.active_calls.get(call_sid, {})
+                call_type = call_info.get("call_type", "b2b_sales")
+                conversation_hist = conversation_memory.get(call_sid, [])
+                
+                # Process call summary and CRM update in background
+                asyncio.create_task(
+                    _process_call_completion(
+                        call_sid, call_type, conversation_hist, int(call_duration)
+                    )
+                )
         
         return {"status": "received"}
         
@@ -1577,6 +1817,76 @@ async def end_call(call_sid: str):
 @app.get("/api/phone/active-calls")
 async def get_active_calls():
     """Get all active phone calls"""
+    if not phone_service:
+        raise HTTPException(status_code=503, detail="Phone service not available")
+    
+    return {"active_calls": phone_service.active_calls}
+
+# 🆕 Dashboard API Endpoints
+@app.get("/api/dashboard/calls")
+async def get_call_dashboard_data(call_type: str = None):
+    """Get dashboard data for completed calls with CRM updates"""
+    try:
+        filtered_calls = call_summaries
+        
+        if call_type:
+            filtered_calls = {
+                k: v for k, v in call_summaries.items()
+                if v["summary"].get("call_type", "").lower().replace(" ", "_") == call_type
+            }
+        
+        # Generate stats
+        total_calls = len(filtered_calls)
+        if total_calls == 0:
+            return {
+                "status": "success",
+                "data": {
+                    "total_calls": 0,
+                    "recent_calls": [],
+                    "summary_stats": {
+                        "avg_duration": "0:00",
+                        "avg_lead_score": 0,
+                        "conversion_rate": "0%"
+                    }
+                },
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        # Calculate stats
+        total_duration = sum([v["summary"].get("duration_seconds", 0) for v in filtered_calls.values()])
+        avg_duration_secs = total_duration // total_calls
+        avg_duration = f"{avg_duration_secs // 60}:{avg_duration_secs % 60:02d}"
+        
+        # Calculate average score
+        scores = [v["summary"].get("lead_score", v["summary"].get("qualification_score", 0)) for v in filtered_calls.values()]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        # Calculate conversion/interest rate
+        high_interest = sum([1 for v in filtered_calls.values() if v["summary"].get("interest_level") == "high" or v["summary"].get("qualification_score", 0) >= 7])
+        conversion_rate = f"{(high_interest / total_calls * 100):.0f}%"
+        
+        return {
+            "status": "success",
+            "data": {
+                "total_calls": total_calls,
+                "recent_calls": list(filtered_calls.values())[-10:],  # Last 10
+                "summary_stats": {
+                    "total_calls": total_calls,
+                    "avg_duration": avg_duration,
+                    "conversion_rate": conversion_rate,
+                    "avg_lead_score": f"{avg_score:.1f}"
+                }
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Dashboard data error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/phone/active-calls_old")
+async def get_active_calls_old():
+    """Get all active phone calls - old endpoint"""
     if not phone_service:
         raise HTTPException(status_code=503, detail="Phone service not available")
     
