@@ -1,467 +1,636 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Real Estate Voice Agent - Lead Qualification</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
-</head>
-<body>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-home me-2"></i>Real Estate AI
-            </a>
-            <div class="navbar-nav ms-auto">
-                <button id="startQualificationBtn" class="btn btn-light me-2">
-                    <i class="fas fa-play me-1"></i>Start Call
-                </button>
-                <button id="stopQualificationBtn" class="btn btn-danger me-2" disabled>
-                    <i class="fas fa-stop me-1"></i>End Call
-                </button>
-                <span class="navbar-text">
-                    <span id="connectionStatus" class="badge bg-warning">Ready</span>
-                </span>
-            </div>
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+          <i class="fas fa-home me-2"></i>Real Estate AI
+        </a>
+        <div class="navbar-nav ms-auto">
+          <button id="startQualificationBtn" class="btn btn-light me-2">
+            <i class="fas fa-play me-1"></i>Start Call
+          </button>
+          <button
+            id="stopQualificationBtn"
+            class="btn btn-danger me-2"
+            disabled
+          >
+            <i class="fas fa-stop me-1"></i>End Call
+          </button>
+          <span class="navbar-text">
+            <span id="connectionStatus" class="badge bg-warning">Ready</span>
+          </span>
         </div>
+      </div>
     </nav>
 
     <div class="container-fluid mt-3">
-        <!-- Phone Testing Panel (NEW) -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="card border-success">
-                    <div class="card-header bg-success text-white">
-                        <h5><i class="fas fa-phone-alt me-2"></i>📞 Test Real Phone Calls - Hyderabad Properties</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-8">
-                                <h6 class="text-success"><i class="fas fa-robot me-1"></i>Rohan Reddy - JK Ventures Property Consultant</h6>
-                                <p class="text-muted">Intelligent AI agent will call you about Hyderabad properties with natural conversation</p>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Your Phone Number (E.164 format):</label>
-                                            <input type="tel" class="form-control" id="phoneNumber" placeholder="+916397983037" value="+916397983037">
-                                            <small class="text-muted">Format: +91 followed by 10 digits</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Your Name:</label>
-                                            <input type="text" class="form-control" id="leadName" placeholder="Arjun" value="Arjun">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Budget Range (optional):</label>
-                                            <input type="text" class="form-control" id="leadBudget" placeholder="50L - 1Cr">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Preferred Area (optional):</label>
-                                            <input type="text" class="form-control" id="leadArea" placeholder="Gachibowli, HITEC City">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <button class="btn btn-success btn-lg w-100" id="makeRealEstateCallBtn">
-                                    <i class="fas fa-phone me-2"></i>📞 Call Me Now - Real Estate Agent
-                                </button>
-                            </div>
-                            
-                            <div class="col-md-4">
-                                <div class="alert alert-success h-100">
-                                    <h6><strong>🤖 Agent Details:</strong></h6>
-                                    <ul class="small mb-0">
-                                        <li><strong>Name:</strong> Rohan Reddy</li>
-                                        <li><strong>Company:</strong> JK Ventures</li>
-                                        <li><strong>Voice:</strong> Premium Indian English (en-IN-rohan)</li>
-                                        <li><strong>Expertise:</strong> Hyderabad Properties</li>
-                                        <li><strong>Languages:</strong> English, Hindi, Telugu</li>
-                                        <li><strong>Features:</strong>
-                                            <ul>
-                                                <li>Natural conversations</li>
-                                                <li>Smart property matching</li>
-                                                <li>Budget qualification</li>
-                                                <li>Market insights</li>
-                                            </ul>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <div id="callStatus" class="alert alert-secondary" style="display: none;">
-                                    <strong>Call Status:</strong> <span id="callStatusText">Initializing...</span>
-                                </div>
-                                <div id="callLog" class="border rounded p-3 bg-light" style="max-height: 250px; overflow-y: auto; display: none;">
-                                    <h6><i class="fas fa-list me-1"></i>Call Activity Log:</h6>
-                                    <div id="callLogContent" class="small"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      <!-- Phone Testing Panel (NEW) -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <div class="card border-success">
+            <div class="card-header bg-success text-white">
+              <h5>
+                <i class="fas fa-phone-alt me-2"></i>📞 Test Real Phone Calls -
+                Hyderabad Properties
+              </h5>
             </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-8">
+                  <h6 class="text-success">
+                    <i class="fas fa-robot me-1"></i>Rohan Reddy - JK Ventures
+                    Property Consultant
+                  </h6>
+                  <p class="text-muted">
+                    Intelligent AI agent will call you about Hyderabad
+                    properties with natural conversation
+                  </p>
+
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        <label class="form-label"
+                          >Your Phone Number (E.164 format):</label
+                        >
+                        <input
+                          type="tel"
+                          class="form-control"
+                          id="phoneNumber"
+                          placeholder="+916397983037"
+                          value="+916397983037"
+                        />
+                        <small class="text-muted"
+                          >Format: +91 followed by 10 digits</small
+                        >
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        <label class="form-label">Your Name:</label>
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="leadName"
+                          placeholder="Arjun"
+                          value="Arjun"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="mb-3">
+                        <label class="form-label">Email Address:</label>
+                        <input
+                          type="email"
+                          class="form-control"
+                          id="leadEmail"
+                          placeholder="customer@example.com"
+                          required
+                        />
+                        <small class="text-muted"
+                          >📧 You'll receive property recommendations and call
+                          summary via email</small
+                        >
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        <label class="form-label"
+                          >Budget Range (optional):</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="leadBudget"
+                          placeholder="50L - 1Cr"
+                        />
+                      </div>
+                    </div>
+                    <div class="col-md-6">
+                      <div class="mb-3">
+                        <label class="form-label"
+                          >Preferred Area (optional):</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          id="leadArea"
+                          placeholder="Gachibowli, HITEC City"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    class="btn btn-success btn-lg w-100"
+                    id="makeRealEstateCallBtn"
+                  >
+                    <i class="fas fa-phone me-2"></i>📞 Call Me Now - Real
+                    Estate Agent
+                  </button>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="alert alert-success h-100">
+                    <h6><strong>🤖 Agent Details:</strong></h6>
+                    <ul class="small mb-0">
+                      <li><strong>Name:</strong> Rohan Reddy</li>
+                      <li><strong>Company:</strong> JK Ventures</li>
+                      <li>
+                        <strong>Voice:</strong> Premium Indian English
+                        (en-IN-rohan)
+                      </li>
+                      <li><strong>Expertise:</strong> Hyderabad Properties</li>
+                      <li>
+                        <strong>Languages:</strong> English, Hindi, Telugu
+                      </li>
+                      <li>
+                        <strong>Features:</strong>
+                        <ul>
+                          <li>Natural conversations</li>
+                          <li>Smart property matching</li>
+                          <li>Budget qualification</li>
+                          <li>Market insights</li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row mt-3">
+                <div class="col-12">
+                  <div
+                    id="callStatus"
+                    class="alert alert-secondary"
+                    style="display: none"
+                  >
+                    <strong>Call Status:</strong>
+                    <span id="callStatusText">Initializing...</span>
+                  </div>
+                  <div
+                    id="callLog"
+                    class="border rounded p-3 bg-light"
+                    style="max-height: 250px; overflow-y: auto; display: none"
+                  >
+                    <h6><i class="fas fa-list me-1"></i>Call Activity Log:</h6>
+                    <div id="callLogContent" class="small"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        
-        <div class="row">
-            <!-- Left Panel - Conversation & Voice -->
-            <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-header bg-light">
-                        <h5><i class="fas fa-phone me-2"></i>Voice Conversation</h5>
-                        <div class="float-end">
-                            <select id="languageSelect" class="form-select form-select-sm">
-                                <option value="english">English</option>
-                                <option value="hindi">हिंदी</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div id="conversationLog" class="conversation-log">
-                            <div class="text-center text-muted p-4">
-                                <i class="fas fa-microphone fa-2x mb-3"></i>
-                                <p>Click "Start Call" to begin lead qualification</p>
-                                <small>Powered by Murf AI natural Indian voices</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="text-center">
-                            <div id="voiceVisualizer" class="voice-visualizer">
-                                <div class="voice-bar"></div>
-                                <div class="voice-bar"></div>
-                                <div class="voice-bar"></div>
-                                <div class="voice-bar"></div>
-                                <div class="voice-bar"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      </div>
+
+      <div class="row">
+        <!-- Left Panel - Conversation & Voice -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header bg-light">
+              <h5><i class="fas fa-phone me-2"></i>Voice Conversation</h5>
+              <div class="float-end">
+                <select id="languageSelect" class="form-select form-select-sm">
+                  <option value="english">English</option>
+                  <option value="hindi">हिंदी</option>
+                </select>
+              </div>
             </div>
-
-            <!-- Right Panel - Lead Qualification -->
-            <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-header bg-info text-white">
-                        <h5><i class="fas fa-user-check me-2"></i>Lead Qualification</h5>
-                        <div class="float-end">
-                            <span id="qualificationScore" class="badge bg-light text-dark">Score: 0/10</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Progress Bar -->
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
-                                <small>Qualification Progress</small>
-                                <small id="progressPercentage">0%</small>
-                            </div>
-                            <div class="progress">
-                                <div id="qualificationProgress" class="progress-bar" style="width: 0%"></div>
-                            </div>
-                        </div>
-
-                        <!-- Lead Information -->
-                        <div id="leadInfoPanel">
-                            <h6>Lead Information</h6>
-                            <div class="row">
-                                <div class="col-6">
-                                    <small class="text-muted">Budget Range</small>
-                                    <div id="budgetRange" class="fw-bold">Not disclosed</div>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Property Type</small>
-                                    <div id="propertyType" class="fw-bold">Not specified</div>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Location</small>
-                                    <div id="preferredLocation" class="fw-bold">Any</div>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Timeline</small>
-                                    <div id="timeline" class="fw-bold">Exploring</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- AI Insights -->
-                        <div id="aiInsights" class="mt-3">
-                            <h6>AI Insights</h6>
-                            <div id="insightsPanel" class="insights-panel">
-                                <div class="alert alert-light">
-                                    <i class="fas fa-brain me-2"></i>Start conversation to see AI insights
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Recommended Actions -->
-                        <div id="recommendedActions" class="mt-3">
-                            <h6>Next Actions</h6>
-                            <div id="actionsPanel" class="actions-panel">
-                                <button class="btn btn-outline-success btn-sm" id="siteVisitBtn" disabled>
-                                    <i class="fas fa-map-marker-alt me-1"></i>Schedule Site Visit
-                                </button>
-                                <button class="btn btn-outline-primary btn-sm" id="sendPropertiesBtn" disabled>
-                                    <i class="fas fa-home me-1"></i>Send Properties
-                                </button>
-                                <button class="btn btn-outline-info btn-sm" id="followUpBtn" disabled>
-                                    <i class="fas fa-phone me-1"></i>Schedule Follow-up
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+            <div class="card-body p-0">
+              <div id="conversationLog" class="conversation-log">
+                <div class="text-center text-muted p-4">
+                  <i class="fas fa-microphone fa-2x mb-3"></i>
+                  <p>Click "Start Call" to begin lead qualification</p>
+                  <small>Powered by Murf AI natural Indian voices</small>
                 </div>
+              </div>
             </div>
+            <div class="card-footer">
+              <div class="text-center">
+                <div id="voiceVisualizer" class="voice-visualizer">
+                  <div class="voice-bar"></div>
+                  <div class="voice-bar"></div>
+                  <div class="voice-bar"></div>
+                  <div class="voice-bar"></div>
+                  <div class="voice-bar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Bottom Panel - Property Recommendations -->
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h6><i class="fas fa-building me-2"></i>Property Recommendations</h6>
-                        <div class="float-end">
-                            <span id="matchingProperties" class="badge bg-secondary">0 matches</span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="propertyRecommendations" class="row">
-                            <div class="col-12 text-center text-muted">
-                                <p>Complete lead qualification to see matching properties</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Right Panel - Lead Qualification -->
+        <div class="col-lg-6">
+          <div class="card h-100">
+            <div class="card-header bg-info text-white">
+              <h5><i class="fas fa-user-check me-2"></i>Lead Qualification</h5>
+              <div class="float-end">
+                <span id="qualificationScore" class="badge bg-light text-dark"
+                  >Score: 0/10</span
+                >
+              </div>
             </div>
+            <div class="card-body">
+              <!-- Progress Bar -->
+              <div class="mb-3">
+                <div class="d-flex justify-content-between">
+                  <small>Qualification Progress</small>
+                  <small id="progressPercentage">0%</small>
+                </div>
+                <div class="progress">
+                  <div
+                    id="qualificationProgress"
+                    class="progress-bar"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Lead Information -->
+              <div id="leadInfoPanel">
+                <h6>Lead Information</h6>
+                <div class="row">
+                  <div class="col-6">
+                    <small class="text-muted">Budget Range</small>
+                    <div id="budgetRange" class="fw-bold">Not disclosed</div>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Property Type</small>
+                    <div id="propertyType" class="fw-bold">Not specified</div>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Location</small>
+                    <div id="preferredLocation" class="fw-bold">Any</div>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Timeline</small>
+                    <div id="timeline" class="fw-bold">Exploring</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI Insights -->
+              <div id="aiInsights" class="mt-3">
+                <h6>AI Insights</h6>
+                <div id="insightsPanel" class="insights-panel">
+                  <div class="alert alert-light">
+                    <i class="fas fa-brain me-2"></i>Start conversation to see
+                    AI insights
+                  </div>
+                </div>
+              </div>
+
+              <!-- Recommended Actions -->
+              <div id="recommendedActions" class="mt-3">
+                <h6>Next Actions</h6>
+                <div id="actionsPanel" class="actions-panel">
+                  <button
+                    class="btn btn-outline-success btn-sm"
+                    id="siteVisitBtn"
+                    disabled
+                  >
+                    <i class="fas fa-map-marker-alt me-1"></i>Schedule Site
+                    Visit
+                  </button>
+                  <button
+                    class="btn btn-outline-primary btn-sm"
+                    id="sendPropertiesBtn"
+                    disabled
+                  >
+                    <i class="fas fa-home me-1"></i>Send Properties
+                  </button>
+                  <button
+                    class="btn btn-outline-info btn-sm"
+                    id="followUpBtn"
+                    disabled
+                  >
+                    <i class="fas fa-phone me-1"></i>Schedule Follow-up
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Bottom Panel - Property Recommendations -->
+      <div class="row mt-3">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h6>
+                <i class="fas fa-building me-2"></i>Property Recommendations
+              </h6>
+              <div class="float-end">
+                <span id="matchingProperties" class="badge bg-secondary"
+                  >0 matches</span
+                >
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="propertyRecommendations" class="row">
+                <div class="col-12 text-center text-muted">
+                  <p>Complete lead qualification to see matching properties</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Audio Player -->
-    <audio id="audioPlayer" controls style="display: none;"></audio>
+    <audio id="audioPlayer" controls style="display: none"></audio>
 
     <!-- Site Visit Modal -->
     <div class="modal fade" id="siteVisitModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Schedule Site Visit</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="siteVisitForm">
-                        <div class="mb-3">
-                            <label class="form-label">Preferred Date</label>
-                            <input type="date" class="form-control" id="visitDate" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Preferred Time</label>
-                            <select class="form-select" id="visitTime" required>
-                                <option value="">Select time</option>
-                                <option value="morning">Morning (9 AM - 12 PM)</option>
-                                <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
-                                <option value="evening">Evening (5 PM - 8 PM)</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Property Interest</label>
-                            <select class="form-select" id="propertyInterest">
-                                <option value="">Select property</option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-success" id="confirmVisitBtn">Confirm Visit</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                </div>
-            </div>
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Schedule Site Visit</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="siteVisitForm">
+              <div class="mb-3">
+                <label class="form-label">Preferred Date</label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="visitDate"
+                  required
+                />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Preferred Time</label>
+                <select class="form-select" id="visitTime" required>
+                  <option value="">Select time</option>
+                  <option value="morning">Morning (9 AM - 12 PM)</option>
+                  <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+                  <option value="evening">Evening (5 PM - 8 PM)</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Property Interest</label>
+                <select class="form-select" id="propertyInterest">
+                  <option value="">Select property</option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-success" id="confirmVisitBtn">
+              Confirm Visit
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/script.js"></script>
     <script>
-        // Initialize Real Estate Voice Agent
-        document.addEventListener('DOMContentLoaded', function() {
-            window.voiceAI = new VoiceAIInterface('real_estate');
-            
-            // Initialize Phone Testing
-            initPhoneTesting();
+      // Initialize Real Estate Voice Agent
+      document.addEventListener("DOMContentLoaded", function () {
+        window.voiceAI = new VoiceAIInterface("real_estate");
+
+        // Initialize Phone Testing
+        initPhoneTesting();
+      });
+
+      function initPhoneTesting() {
+        const makeRealEstateCallBtn = document.getElementById(
+          "makeRealEstateCallBtn"
+        );
+        const callStatus = document.getElementById("callStatus");
+        const callStatusText = document.getElementById("callStatusText");
+        const callLog = document.getElementById("callLog");
+        const callLogContent = document.getElementById("callLogContent");
+
+        makeRealEstateCallBtn.addEventListener("click", async function () {
+          const phoneNumber = document.getElementById("phoneNumber").value;
+          const leadName = document.getElementById("leadName").value;
+          const leadEmail = document.getElementById("leadEmail").value;
+          const leadBudget = document.getElementById("leadBudget").value;
+          const leadArea = document.getElementById("leadArea").value;
+
+          if (!phoneNumber || !leadName || !leadEmail) {
+            alert("Please enter phone number, your name, and email address");
+            return;
+          }
+
+          await makePhoneCall(
+            phoneNumber,
+            leadName,
+            leadEmail,
+            leadBudget,
+            leadArea
+          );
         });
-        
-        function initPhoneTesting() {
-            const makeRealEstateCallBtn = document.getElementById('makeRealEstateCallBtn');
-            const callStatus = document.getElementById('callStatus');
-            const callStatusText = document.getElementById('callStatusText');
-            const callLog = document.getElementById('callLog');
-            const callLogContent = document.getElementById('callLogContent');
-            
-            makeRealEstateCallBtn.addEventListener('click', async function() {
-                const phoneNumber = document.getElementById('phoneNumber').value;
-                const leadName = document.getElementById('leadName').value;
-                const leadBudget = document.getElementById('leadBudget').value;
-                const leadArea = document.getElementById('leadArea').value;
-                
-                if (!phoneNumber || !leadName) {
-                    alert('Please enter phone number and your name');
-                    return;
-                }
-                
-                await makePhoneCall(phoneNumber, leadName, leadBudget, leadArea);
+
+        async function makePhoneCall(
+          phoneNumber,
+          leadName,
+          leadEmail,
+          budget,
+          area
+        ) {
+          // Show status
+          callStatus.style.display = "block";
+          callStatusText.textContent = "Initiating real estate call...";
+          callLog.style.display = "block";
+          callLogContent.innerHTML = "";
+
+          // Disable button
+          makeRealEstateCallBtn.disabled = true;
+          makeRealEstateCallBtn.innerHTML =
+            '<i class="fas fa-spinner fa-spin me-2"></i>Calling...';
+
+          try {
+            const requestData = {
+              phone_number: phoneNumber,
+              call_type: "real_estate",
+              lead_info: {
+                name: leadName,
+                email: leadEmail,
+              },
+            };
+
+            if (budget) requestData.lead_info.budget = budget;
+            if (area) requestData.lead_info.preferred_area = area;
+
+            logCall(`📞 Initiating call to ${phoneNumber}...`);
+            logCall(
+              `👤 Lead: ${leadName}${budget ? ` | Budget: ${budget}` : ""}${
+                area ? ` | Area: ${area}` : ""
+              }`
+            );
+
+            const response = await fetch("/api/phone/call", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(requestData),
             });
-            
-            async function makePhoneCall(phoneNumber, leadName, budget, area) {
-                // Show status
-                callStatus.style.display = 'block';
-                callStatusText.textContent = 'Initiating real estate call...';
-                callLog.style.display = 'block';
-                callLogContent.innerHTML = '';
-                
-                // Disable button
-                makeRealEstateCallBtn.disabled = true;
-                makeRealEstateCallBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Calling...';
-                
-                try {
-                    const requestData = {
-                        phone_number: phoneNumber,
-                        call_type: 'real_estate',
-                        lead_info: {
-                            name: leadName
-                        }
-                    };
-                    
-                    if (budget) requestData.lead_info.budget = budget;
-                    if (area) requestData.lead_info.preferred_area = area;
-                    
-                    logCall(`📞 Initiating call to ${phoneNumber}...`);
-                    logCall(`👤 Lead: ${leadName}${budget ? ` | Budget: ${budget}` : ''}${area ? ` | Area: ${area}` : ''}`);
-                    
-                    const response = await fetch('/api/phone/call', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(requestData)
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        callStatusText.textContent = '✅ Call initiated successfully!';
-                        callStatusText.className = 'text-success fw-bold';
-                        logCall(`✅ Call initiated! Call SID: ${result.call_sid}`);
-                        logCall(`📱 Your phone will ring in 3-5 seconds...`);
-                        logCall(`🤖 <strong>Agent:</strong> Rohan Reddy from JK Ventures`);
-                        logCall(`🎤 <strong>Tip:</strong> Speak naturally - AI understands English, Hindi & Telugu`);
-                        logCall(`💡 <strong>Try:</strong> "Tell me about Gachibowli properties" or "क्या मुझे कुछ flats दिखा सकते हैं?"`);
-                        
-                        // Poll call status
-                        pollCallStatus(result.call_sid);
-                    } else {
-                        callStatusText.textContent = '❌ Call failed';
-                        callStatusText.className = 'text-danger fw-bold';
-                        logCall(`❌ Error: ${result.error || result.detail || 'Unknown error'}`);
-                        logCall(`💡 Check: Phone number format (+91XXXXXXXXXX), Twilio credentials, WEBHOOK_BASE_URL`);
-                        
-                        resetButton();
-                    }
-                    
-                } catch (error) {
-                    callStatusText.textContent = '❌ Error: ' + error.message;
-                    callStatusText.className = 'text-danger fw-bold';
-                    logCall(`❌ Network Error: ${error.message}`);
-                    
-                    resetButton();
-                }
+
+            const result = await response.json();
+
+            if (result.success) {
+              callStatusText.textContent = "✅ Call initiated successfully!";
+              callStatusText.className = "text-success fw-bold";
+              logCall(`✅ Call initiated! Call SID: ${result.call_sid}`);
+              logCall(`📱 Your phone will ring in 3-5 seconds...`);
+              logCall(
+                `🤖 <strong>Agent:</strong> Rohan Reddy from JK Ventures`
+              );
+              logCall(
+                `🎤 <strong>Tip:</strong> Speak naturally - AI understands English, Hindi & Telugu`
+              );
+              logCall(
+                `💡 <strong>Try:</strong> "Tell me about Gachibowli properties" or "क्या मुझे कुछ flats दिखा सकते हैं?"`
+              );
+
+              // Poll call status
+              pollCallStatus(result.call_sid);
+            } else {
+              callStatusText.textContent = "❌ Call failed";
+              callStatusText.className = "text-danger fw-bold";
+              logCall(
+                `❌ Error: ${result.error || result.detail || "Unknown error"}`
+              );
+              logCall(
+                `💡 Check: Phone number format (+91XXXXXXXXXX), Twilio credentials, WEBHOOK_BASE_URL`
+              );
+
+              resetButton();
             }
-            
-            async function pollCallStatus(callSid) {
-                let pollCount = 0;
-                const maxPolls = 40; // 2 minutes max
-                
-                const interval = setInterval(async () => {
-                    pollCount++;
-                    
-                    if (pollCount > maxPolls) {
-                        clearInterval(interval);
-                        logCall(`⏱️ Status polling stopped after 2 minutes`);
-                        resetButton();
-                        return;
-                    }
-                    
-                    try {
-                        const response = await fetch(`/api/phone/call/${callSid}`);
-                        
-                        if (response.ok) {
-                            const result = await response.json();
-                            
-                            if (result.status) {
-                                const statusEmoji = {
-                                    'initiated': '📲',
-                                    'ringing': '📞',
-                                    'in-progress': '☎️',
-                                    'answered': '✅',
-                                    'completed': '✅',
-                                    'failed': '❌',
-                                    'busy': '📵',
-                                    'no-answer': '📵'
-                                };
-                                
-                                const emoji = statusEmoji[result.status] || '📊';
-                                logCall(`${emoji} Status: <strong>${result.status.toUpperCase()}</strong>${result.duration ? ` | Duration: ${result.duration}s` : ''}`);
-                                
-                                if (['completed', 'failed', 'busy', 'no-answer'].includes(result.status)) {
-                                    clearInterval(interval);
-                                    
-                                    if (result.status === 'completed') {
-                                        callStatusText.textContent = `✅ Call completed (${result.duration}s)`;
-                                        callStatusText.className = 'text-success fw-bold';
-                                        logCall(`🎉 Call completed successfully! Duration: ${result.duration} seconds`);
-                                        logCall(`💼 Lead qualified and logged in CRM`);
-                                    } else {
-                                        callStatusText.textContent = `❌ Call ${result.status}`;
-                                        callStatusText.className = 'text-warning fw-bold';
-                                        logCall(`⚠️ Call ${result.status}`);
-                                    }
-                                    
-                                    resetButton();
-                                }
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Status poll error:', error);
-                    }
-                }, 3000); // Poll every 3 seconds
-            }
-            
-            function resetButton() {
-                setTimeout(() => {
-                    makeRealEstateCallBtn.disabled = false;
-                    makeRealEstateCallBtn.innerHTML = '<i class="fas fa-phone me-2"></i>📞 Call Me Now - Real Estate Agent';
-                }, 3000);
-            }
-            
-            function logCall(message) {
-                const timestamp = new Date().toLocaleTimeString();
-                const logEntry = document.createElement('div');
-                logEntry.className = 'mb-2 p-2 border-start border-success border-3';
-                logEntry.innerHTML = `<span class="text-muted small">[${timestamp}]</span> ${message}`;
-                callLogContent.appendChild(logEntry);
-                callLogContent.scrollTop = callLogContent.scrollHeight;
-            }
+          } catch (error) {
+            callStatusText.textContent = "❌ Error: " + error.message;
+            callStatusText.className = "text-danger fw-bold";
+            logCall(`❌ Network Error: ${error.message}`);
+
+            resetButton();
+          }
         }
+
+        async function pollCallStatus(callSid) {
+          let pollCount = 0;
+          const maxPolls = 40; // 2 minutes max
+
+          const interval = setInterval(async () => {
+            pollCount++;
+
+            if (pollCount > maxPolls) {
+              clearInterval(interval);
+              logCall(`⏱️ Status polling stopped after 2 minutes`);
+              resetButton();
+              return;
+            }
+
+            try {
+              const response = await fetch(`/api/phone/call/${callSid}`);
+
+              if (response.ok) {
+                const result = await response.json();
+
+                if (result.status) {
+                  const statusEmoji = {
+                    initiated: "📲",
+                    ringing: "📞",
+                    "in-progress": "☎️",
+                    answered: "✅",
+                    completed: "✅",
+                    failed: "❌",
+                    busy: "📵",
+                    "no-answer": "📵",
+                  };
+
+                  const emoji = statusEmoji[result.status] || "📊";
+                  logCall(
+                    `${emoji} Status: <strong>${result.status.toUpperCase()}</strong>${
+                      result.duration ? ` | Duration: ${result.duration}s` : ""
+                    }`
+                  );
+
+                  if (
+                    ["completed", "failed", "busy", "no-answer"].includes(
+                      result.status
+                    )
+                  ) {
+                    clearInterval(interval);
+
+                    if (result.status === "completed") {
+                      callStatusText.textContent = `✅ Call completed (${result.duration}s)`;
+                      callStatusText.className = "text-success fw-bold";
+                      logCall(
+                        `🎉 Call completed successfully! Duration: ${result.duration} seconds`
+                      );
+                      logCall(`💼 Lead qualified and logged in CRM`);
+                    } else {
+                      callStatusText.textContent = `❌ Call ${result.status}`;
+                      callStatusText.className = "text-warning fw-bold";
+                      logCall(`⚠️ Call ${result.status}`);
+                    }
+
+                    resetButton();
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Status poll error:", error);
+            }
+          }, 3000); // Poll every 3 seconds
+        }
+
+        function resetButton() {
+          setTimeout(() => {
+            makeRealEstateCallBtn.disabled = false;
+            makeRealEstateCallBtn.innerHTML =
+              '<i class="fas fa-phone me-2"></i>📞 Call Me Now - Real Estate Agent';
+          }, 3000);
+        }
+
+        function logCall(message) {
+          const timestamp = new Date().toLocaleTimeString();
+          const logEntry = document.createElement("div");
+          logEntry.className = "mb-2 p-2 border-start border-success border-3";
+          logEntry.innerHTML = `<span class="text-muted small">[${timestamp}]</span> ${message}`;
+          callLogContent.appendChild(logEntry);
+          callLogContent.scrollTop = callLogContent.scrollHeight;
+        }
+      }
     </script>
-</body>
+  </body>
 </html>
