@@ -1292,16 +1292,16 @@ async def generate_twiml(call_type: str, request: Request):
         
         # ⭐ OPTIMIZED: Agent-specific voices and opening messages
         if call_type == "real_estate":
-            # Real Estate uses Rohan (different voice persona)
-            voice_id = "en-IN-rohan"  # ✅ FIXED: English-Hindi bilingual voice
-            opening_text = "Namaste Arjun! Main Rohan Reddy hun JK Ventures se. Hyderabad mein aapke liye kuch premium properties hai Gachibowli aur Hitec City mein. 2 minutes baat kar sakte hain?"
+            # Real Estate uses Priya (ENGLISH ONLY - professional, clear)
+            voice_id = "en-IN-priya"  # ✅ FIXED: English-only for better clarity
+            opening_text = "Hello Arjun! This is Priya from JK Ventures. I'm calling about some premium properties we have in Gachibowli and Hitec City, Hyderabad. Do you have 2 minutes to talk?"
         else:  # b2b_sales
             # B2B Sales uses Shaan (premium bilingual voice)
             voice_id = "hi-IN-shaan"
             opening_text = "Hi Arjun, main Shaan hun Murf AI se. Aapka voice content production 80% faster kar sakta hun. 2 minutes hai?"
         
-        logger.info(f"🤖 Optimized Bilingual Opening: {opening_text}")
-        logger.info(f"🎙️ Using Premium Bilingual Voice: {voice_id} (Shaan)")
+        logger.info(f"🤖 Opening Message: {opening_text}")
+        logger.info(f"🎙️ Using Voice: {voice_id}")
 
         
         # Generate Murf audio using WebSocket streaming (fast!)
@@ -1398,8 +1398,8 @@ async def process_speech(call_type: str, request: Request):
         
         # 2. ⭐ Agent-specific voice selection
         if call_type == "real_estate":
-            voice_id = "en-IN-rohan"  # ✅ FIXED: Rohan for Real Estate (English-Hindi)
-            logger.info(f"🎙️ Using ROHAN voice: {voice_id} (Real Estate Consultant)")
+            voice_id = "en-IN-priya"  # ✅ FIXED: Priya for Real Estate (English ONLY)
+            logger.info(f"🎙️ Using PRIYA voice: {voice_id} (Real Estate Consultant - English)")
         else:  # b2b_sales
             voice_id = "hi-IN-shaan"  # Shaan for B2B Sales
             logger.info(f"🎙️ Using SHAAN voice: {voice_id} (B2B Sales Expert)")
@@ -1517,8 +1517,8 @@ Example good responses:
 CRITICAL: Base your response on what they ACTUALLY said, not generic acknowledgments."""
 
         else:  # real_estate
-            # Rohan Reddy - Bilingual property consultant (different persona)
-            system_prompt = f"""You are Rohan Reddy, a senior property consultant at JK Ventures Hyderabad with 12+ years experience.
+            # Priya - Professional English-only property consultant
+            system_prompt = f"""You are Priya, a senior property consultant at JK Ventures Hyderabad with 12+ years experience.
 
 YOUR EXPERTISE: Hyderabad Real Estate
 - Premium properties in Gachibowli, Hitec City, Jubilee Hills, Banjara Hills
@@ -1544,19 +1544,23 @@ YOUR APPROACH:
 5. Always guide toward site visit or WhatsApp property details
 
 RESPONSE STYLE:
-- Warm, trustworthy, expert
+- Professional, warm, expert
+- SPEAK ONLY IN ENGLISH (no Hindi/Telugu mixing)
 - Use "Arjun" name naturally
 - Share specific property details when relevant
 - Ask qualifying questions strategically
 - NEVER generic responses
 - Build urgency naturally (limited inventory, price appreciation)
+- Keep responses under 30 words for phone clarity
 
 Example good responses:
-- "Excellent! Tell me Arjun, what's your budget range and preferred location in Hyderabad - are you looking at the IT corridor like Gachibowli or Madhapur?"
+- "Excellent! Tell me Arjun, what's your budget range and preferred location - are you looking at the IT corridor like Gachibowli or Madhapur?"
 - "Perfect! We have beautiful 3BHK options in Gachibowli starting from ₹1.2 crores with excellent amenities. Is this for investment or your own residence?"
-- "Great question! Property prices in Hitec City have appreciated 12% this year. I have a RERA-approved project with ready possession. Can I WhatsApp you the details?"
+- "Great question! Property prices in Hitec City have appreciated 12% this year. I have a RERA-approved project ready for possession. Can I WhatsApp you the details?"
 
-CRITICAL: Respond specifically to what they said, not with generic acknowledgments."""
+CRITICAL: 
+- Respond ONLY in English (no Hindi words like "Namaste", "aap", "hai", etc.)
+- Be specific to what they said, not generic acknowledgments."""
 
         ai_task = asyncio.create_task(
             azure_service.generate_text_lightning(
