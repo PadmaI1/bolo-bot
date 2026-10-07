@@ -53,7 +53,7 @@
               <div class="row">
                 <div class="col-md-8">
                   <h6 class="text-success">
-                    <i class="fas fa-robot me-1"></i>Rohan Reddy - JK Ventures
+                    <i class="fas fa-robot me-1"></i>Priya - JK Ventures
                     Property Consultant
                   </h6>
                   <p class="text-muted">
@@ -154,20 +154,20 @@
                   <div class="alert alert-success h-100">
                     <h6><strong>🤖 Agent Details:</strong></h6>
                     <ul class="small mb-0">
-                      <li><strong>Name:</strong> Rohan Reddy</li>
+                      <li><strong>Name:</strong> Priya</li>
                       <li><strong>Company:</strong> JK Ventures</li>
                       <li>
                         <strong>Voice:</strong> Premium Indian English
-                        (en-IN-rohan)
+                        (en-IN-priya)
                       </li>
                       <li><strong>Expertise:</strong> Hyderabad Properties</li>
                       <li>
-                        <strong>Languages:</strong> English, Hindi, Telugu
+                        <strong>Languages:</strong> English (Professional)
                       </li>
                       <li>
                         <strong>Features:</strong>
                         <ul>
-                          <li>Natural conversations</li>
+                          <li>Natural English conversations</li>
                           <li>Smart property matching</li>
                           <li>Budget qualification</li>
                           <li>Market insights</li>
@@ -190,11 +190,23 @@
                   </div>
                   <div
                     id="callLog"
-                    class="border rounded p-3 bg-light"
-                    style="max-height: 250px; overflow-y: auto; display: none"
+                    class="border rounded p-3"
+                    style="
+                      max-height: 250px;
+                      overflow-y: auto;
+                      display: none;
+                      background-color: #212529;
+                      color: #ffffff;
+                    "
                   >
-                    <h6><i class="fas fa-list me-1"></i>Call Activity Log:</h6>
-                    <div id="callLogContent" class="small"></div>
+                    <h6 style="color: #ffffff">
+                      <i class="fas fa-list me-1"></i>Call Activity Log:
+                    </h6>
+                    <div
+                      id="callLogContent"
+                      class="small"
+                      style="color: #ffffff"
+                    ></div>
                   </div>
                 </div>
               </div>
@@ -512,12 +524,8 @@
               callStatusText.className = "text-success fw-bold";
               logCall(`✅ Call initiated! Call SID: ${result.call_sid}`);
               logCall(`📱 Your phone will ring in 3-5 seconds...`);
-              logCall(
-                `🤖 <strong>Agent:</strong> Priya from JK Ventures`
-              );
-              logCall(
-                `🎤 <strong>Tip:</strong> Speak naturally in English`
-              );
+              logCall(`🤖 <strong>Agent:</strong> Priya from JK Ventures`);
+              logCall(`🎤 <strong>Tip:</strong> Speak naturally in English`);
               logCall(
                 `💡 <strong>Try:</strong> "Tell me about Gachibowli properties" or "Show me some 3BHK options"`
               );

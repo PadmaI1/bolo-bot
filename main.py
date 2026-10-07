@@ -477,7 +477,7 @@ async def _update_real_estate_crm(call_sid: str, summary: Dict[str, Any]) -> Dic
     lead_data = {
         "call_sid": call_sid,
         "lead_name": "Arjun Mehta",
-        "phone": "+916397983037",
+        "phone": os.getenv("MY_NUMBER", "+919999999999"),
         "budget_range": summary.get("budget_range", "not_specified"),
         "location_preference": summary.get("location_preference", "any"),
         "property_type": summary.get("property_type", "not_specified"),
@@ -1591,10 +1591,15 @@ Your response (2-3 sentences max):"""}
             ai_response = _generate_smart_fallback(call_type, speech_result, intent)
         elif _is_generic_response(ai_response):
             logger.warning(f"⚠️ Generic response detected: {ai_response}")
-            # Try again with more explicit instructions
+            # Try again with more explicit instructions (call-type specific)
+            if call_type == "b2b_sales":
+                retry_system_prompt = "You are Shaan, a B2B sales expert at Murf AI. NO generic responses allowed! Be specific about Murf AI features and ask strategic questions."
+            else:  # real_estate
+                retry_system_prompt = "You are Priya, a property consultant at JK Ventures. NO generic responses allowed! Be specific about properties and ask qualifying questions. SPEAK ONLY IN ENGLISH."
+            
             ai_response = await azure_service.generate_text_lightning(
                 messages=[
-                    {"role": "system", "content": "You are a B2B sales expert. NO generic responses allowed!"},
+                    {"role": "system", "content": retry_system_prompt},
                     {"role": "user", "content": f"""The customer said: "{speech_result}"
 
 Intent: {intent}
@@ -1602,7 +1607,7 @@ Context: {call_type.replace('_', ' ')} call
 
 Generate a SPECIFIC response with actual information or strategic questions.
 NOT allowed: "let me help", "I understand", "that's good", generic acknowledgments
-Required: Specific questions, product details, or actionable information
+Required: Specific questions, product/property details, or actionable information
 
 Response:"""}
                 ],
@@ -1615,11 +1620,15 @@ Response:"""}
         
         logger.info(f"🤖 AI Response ({len(ai_response)} chars): {ai_response}")
         
-        # Enhance response with natural bilingual mixing (Hindi-English)
-        enhanced_response = enhance_bilingual_response(ai_response, speech_result)
-        
-        logger.info(f"✨ Enhanced Bilingual Response: {enhanced_response}")
-        logger.info(f"🎙️ Using PREMIUM BILINGUAL voice: {voice_id} (Shaan)")
+        # Enhance response with natural bilingual mixing (ONLY for B2B Sales)
+        if call_type == "b2b_sales":
+            enhanced_response = enhance_bilingual_response(ai_response, speech_result)
+            logger.info(f"✨ Enhanced Bilingual Response: {enhanced_response}")
+            logger.info(f"🎙️ Using PREMIUM BILINGUAL voice: {voice_id} (Shaan)")
+        else:  # real_estate - NO bilingual enhancement, pure English
+            enhanced_response = ai_response  # Keep original English-only response
+            logger.info(f"✨ English-only Response: {enhanced_response}")
+            logger.info(f"🎙️ Using PREMIUM ENGLISH voice: {voice_id} (Priya)")
         
         # 6. Generate audio with ULTRA-FAST streaming
         audio_bytes, metrics = await ultra_fast_sales.generate_ultra_fast(
