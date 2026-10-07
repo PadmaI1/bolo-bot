@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional
 import uvicorn
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, BackgroundTasks
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, HTTPException, BackgroundTasks, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -138,6 +138,45 @@ def enhance_bilingual_response(ai_response: str, customer_input: str) -> str:
         enhanced = enhanced.replace(f"{english}!", f"{hinglish}!")
         enhanced = enhanced.replace(f"{english},", f"{hinglish},")
         enhanced = enhanced.replace(f"{english}.", f"{hinglish}.")
+    
+    return enhanced
+
+def get_smart_response(customer_input: str, customer_name: str = "Sir") -> Optional[str]:
+    """
+    ⚡ INSTANT responses for common intents - bypass AI entirely
+    Detects simple intents and returns pre-crafted responses
+    Returns None if needs AI generation
+    
+    Target: <10ms response time (NO AI call needed)
+    
+    IMPORTANT: Only triggers for VERY SIMPLE/SHORT inputs
+    Complex questions MUST go to AI for contextual answers
+    
+    Args:
+        customer_input: What customer said
+        customer_name: Customer's name for personalization
+    
+    Returns:
+        Pre-crafted response for common intents, or None if needs AI
+    """
+    customer_input_lower = customer_input.lower().strip()
+    
+    # ONLY use smart responses for VERY SHORT inputs (< 6 words)
+    word_count = len(customer_input_lower.split())
+    if word_count > 6:
+        # Complex query - MUST use AI
+        return None
+    
+    # AFFIRMATIVE RESPONSES (simple yes/ok only)
+    if customer_input_lower in ["yes", "haan", "han", "okay", "ok", "sure", "bilkul", "ji", "ji haan", "yes please"]:
+        return f"Perfect! {customer_name}, Murf's API can generate studio-quality voiceovers in 120+ voices. Want a quick demo?"
+    
+    # NEGATIVE RESPONSES (simple no only)
+    if customer_input_lower in ["no", "nahi", "nahin", "not interested", "busy", "nahi ji"]:
+        return f"I understand, {customer_name}. Can I send you a quick demo link for when you have time?"
+    
+    # For everything else (including questions) - USE AI
+    return None
     
     return enhanced
 
@@ -1149,6 +1188,59 @@ async def process_speech(call_type: str, request: Request):
         # 5. Detect customer intent and create context
         intent = _detect_intent(speech_result)
         logger.info(f"🎯 Intent: {intent}")
+        
+        # 5.5. ⚡ TRY SMART RESPONSE FIRST (bypass AI entirely for common intents)
+        smart_response = get_smart_response(speech_result, customer_name="Arjun")
+        if smart_response:
+            logger.info(f"⚡⚡⚡ INSTANT SMART RESPONSE (no AI needed): {smart_response}")
+            ai_response = smart_response
+            
+            # Enhance with bilingual mixing
+            enhanced_response = enhance_bilingual_response(ai_response, speech_result)
+            
+            # Generate audio ULTRA-FAST
+            audio_bytes, metrics = await ultra_fast_sales.generate_ultra_fast(
+                text=enhanced_response,
+                voice_id=voice_id,
+                customer_context={
+                    "sentiment": sentiment,
+                    "language": language
+                }
+            )
+            
+            if audio_bytes:
+                # Save audio file
+                audio_filename = f"ultra_{int(time.time() * 1000)}.wav"
+                audio_path = f"Voice_outputs/{audio_filename}"
+                
+                with open(audio_path, 'wb') as f:
+                    f.write(audio_bytes)
+                
+                audio_url = f"{os.getenv('WEBHOOK_BASE_URL')}/audio/{audio_filename}"
+                
+                total_time = (time.time() - start_time) * 1000
+                
+                logger.info(f"⚡⚡⚡ ULTRA-FAST SMART RESPONSE: {total_time:.0f}ms (target <1000ms) ✅✅✅")
+                logger.info(f"⚡ Bypassed AI call - saved 2-6 seconds!")
+                logger.info(f"🎙️ Voice TTFB: {metrics.get('ttfb_ms', 0):.0f}ms")
+                logger.info(f"🎙️ Voice Total: {metrics.get('total_ms', 0):.0f}ms")
+                
+                # Update conversation history
+                _update_conversation_history(call_sid, speech_result, ai_response)
+                
+                # Create TwiML response
+                response = VoiceResponse()
+                response.play(audio_url)
+                
+                gather = Gather(
+                    input='speech',
+                    action=f'/api/phone/process-speech/{call_type}',
+                    language='en-IN',
+                    speech_timeout='auto'
+                )
+                response.append(gather)
+                
+                return Response(content=str(response), media_type="application/xml")
         
         # 6. Generate AI response with RICH CONTEXT - FIXED: No more generic responses!
         if call_type == "b2b_sales":

@@ -87,40 +87,45 @@ class AzureServicesOptimized:
                 self.logger.error(f"❌ LLM generation failed: {e}")
                 raise
     
-    async def generate_text_lightning(self, messages: List[Dict[str, str]], temperature: float = 0.4, max_tokens: int = 60) -> str:
+    async def generate_text_lightning(self, messages: List[Dict[str, str]], temperature: float = 0.4, max_tokens: int = 80) -> str:
         """
-        ⚡⚡⚡ ULTRA-OPTIMIZED text generation for sub-1000ms responses
-        Target: <1000ms response time (previously <500ms but more realistic)
+        ⚡⚡⚡ BALANCED text generation for quality contextual responses
+        Target: <3500ms response time with balanced quality/speed
         
         OPTIMIZATIONS:
-        - Lower temperature (0.4) for faster, more focused responses
-        - Shorter max_tokens (60) for speed
-        - Lower top_p (0.8) for faster generation
-        - 2-second timeout to prevent hanging
-        - Smart contextual fallbacks for empty responses
+        - Moderate temperature (0.4) for focused yet natural responses  
+        - Reasonable max_tokens (80) for complete answers
+        - Higher top_p (0.8) for better variety
+        - 3.5-second timeout for quality AI responses
+        - Smart contextual fallbacks only for failures
+        - Prioritizes QUALITY over speed
         
         Args:
             messages: List of message dicts with 'role' and 'content'
-            temperature: Creativity (0-1), default 0.4 for speed
-            max_tokens: Maximum response length, default 60 for ultra-fast
+            temperature: Creativity (0-1), default 0.4 for balanced quality
+            max_tokens: Maximum response length, default 80 for complete responses
             
         Returns:
-            Generated text string or contextual fallback
+            Generated text string or contextual fallback on failure
         """
         async with self.request_semaphore:
             try:
                 start_time = time.time()
                 
-                response = await self.client.chat.completions.create(
-                    model=self.model_deployment,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,     # Much shorter for speed
-                    top_p=0.8,                 # Lower for faster generation
-                    frequency_penalty=0.1,     # Reduced
-                    presence_penalty=0.1,      # Reduced
-                    timeout=2.0,               # 2-second timeout
-                    stream=False               # No streaming for simplicity
+                # Balanced timeout for quality AI responses
+                response = await asyncio.wait_for(
+                    self.client.chat.completions.create(
+                        model=self.model_deployment,
+                        messages=messages,
+                        temperature=0.4,           # Balanced for quality
+                        max_tokens=80,             # Enough for good responses
+                        top_p=0.8,                 # Better variety
+                        frequency_penalty=0,       # Minimal processing
+                        presence_penalty=0,        # Minimal processing
+                        timeout=3.0,               # 3s internal timeout
+                        stream=False
+                    ),
+                    timeout=3.5  # Hard limit: 3.5s for quality AI responses
                 )
                 
                 # Extract content with safety check
