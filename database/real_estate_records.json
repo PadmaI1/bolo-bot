@@ -1,0 +1,114 @@
+{
+  "calls": [
+    {
+      "call_sid": "CAabcdef1234567890abcdef1234567890",
+      "call_type": "real_estate",
+      "customer_name": "Amit Patel",
+      "customer_email": "amit.patel@gmail.com",
+      "start_time": "2025-10-12T11:20:00.000Z",
+      "end_time": "2025-10-12T11:24:30.000Z",
+      "duration_seconds": 270,
+      "status": "completed",
+      "summary": {
+        "call_type": "Real Estate",
+        "duration_seconds": 270,
+        "budget_range": "₹80L-1.2Cr",
+        "location": "Gachibowli",
+        "property_type": "3BHK",
+        "qualification_score": 8,
+        "urgency": "high",
+        "next_steps": "Schedule site visit for Gachibowli properties",
+        "customer_sentiment": "interested"
+      },
+      "crm_update": {
+        "status": "success",
+        "contact_id": "LEAD_001",
+        "lead_status": "hot_lead"
+      },
+      "lead_score": 8,
+      "interest_level": "high",
+      "next_steps": "Schedule site visit for 3 properties in Gachibowli - Saturday 2 PM preferred",
+      "conversation_history": [
+        {
+          "role": "agent",
+          "text": "Namaste Amit! Main Priya hun Luxury Homes se. Aapko Hyderabad mein ready-to-move properties dikhani hain. Aap abhi available hain?"
+        },
+        {
+          "role": "customer",
+          "text": "Yes, I'm looking for a 3BHK in Gachibowli area."
+        },
+        {
+          "role": "agent",
+          "text": "Perfect! Gachibowli mein humari 3 premium properties hain - ₹80 lakh se start. Aapka budget kya hai?"
+        },
+        {
+          "role": "customer",
+          "text": "My budget is around 1 crore. I need something close to the IT corridor."
+        },
+        {
+          "role": "agent",
+          "text": "Excellent! Main aapko 3 options dikhati hun - sab IT corridor ke 5 minutes mein. Modern amenities, vastu compliant, ready possession. Shall we schedule a site visit this Saturday?"
+        },
+        {
+          "role": "customer",
+          "text": "Yes, Saturday 2 PM would work for me."
+        }
+      ],
+      "email_sent": true,
+      "saved_at": "2025-10-12T11:25:00.789Z"
+    },
+    {
+      "call_sid": "CAfedcba0987654321fedcba0987654321",
+      "call_type": "real_estate",
+      "customer_name": "Sneha Reddy",
+      "customer_email": "sneha.reddy@outlook.com",
+      "start_time": "2025-10-12T15:45:00.000Z",
+      "end_time": "2025-10-12T15:47:20.000Z",
+      "duration_seconds": 140,
+      "status": "completed",
+      "summary": {
+        "call_type": "Real Estate",
+        "duration_seconds": 140,
+        "budget_range": "₹60L-80L",
+        "location": "any",
+        "property_type": "2BHK",
+        "qualification_score": 4,
+        "urgency": "low",
+        "next_steps": "Send property brochures via email",
+        "customer_sentiment": "neutral"
+      },
+      "crm_update": {
+        "status": "success",
+        "contact_id": "LEAD_002",
+        "lead_status": "warm_lead"
+      },
+      "lead_score": 4,
+      "interest_level": "medium",
+      "next_steps": "Send 2BHK property options via email - Follow up after 2 weeks",
+      "conversation_history": [
+        {
+          "role": "agent",
+          "text": "Hello Sneha! Main Priya hun Luxury Homes se. Aapko Hyderabad mein property options dikhani hain. Aap kaunsa area prefer karenge?"
+        },
+        {
+          "role": "customer",
+          "text": "I'm just exploring options. Not in a hurry to buy."
+        },
+        {
+          "role": "agent",
+          "text": "No problem! Koi time constraint nahi hai. Aap 2BHK ya 3BHK dekh rahe hain? Budget kya hai?"
+        },
+        {
+          "role": "customer",
+          "text": "Looking for 2BHK, budget around 60-70 lakhs. Can you send me some options over email?"
+        }
+      ],
+      "email_sent": true,
+      "saved_at": "2025-10-12T15:48:00.234Z"
+    }
+  ],
+  "metadata": {
+    "total_calls": 2,
+    "last_updated": "2025-10-12T15:48:00.234Z"
+  }
+}

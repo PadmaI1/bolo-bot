@@ -215,14 +215,17 @@
 
       async function loadCallRecords() {
         try {
-          const response = await fetch(
-            "/api/analytics/dashboard?call_type=b2b_sales"
-          );
+          // ⚡ NEW: Load from local storage API
+          const response = await fetch("/api/records/b2b_sales?limit=100");
           const data = await response.json();
 
-          allCalls = data.recent_calls || [];
-          updateStats(allCalls);
-          displayCalls(allCalls);
+          if (data.status === "success") {
+            allCalls = data.records || [];
+            updateStats(data.stats, allCalls);
+            displayCalls(allCalls);
+          } else {
+            throw new Error("Failed to load records");
+          }
         } catch (error) {
           console.error("Error loading call records:", error);
           document.getElementById("callRecords").innerHTML =
@@ -230,27 +233,23 @@
         }
       }
 
-      function updateStats(calls) {
-        document.getElementById("totalCalls").textContent = calls.length;
+      function updateStats(stats, calls) {
+        // Update from local storage stats
+        document.getElementById("totalCalls").textContent =
+          stats.total_calls || 0;
+        document.getElementById("avgDuration").textContent =
+          Math.floor(stats.avg_duration || 0) + "s";
 
+        // Calculate interested and follow-up from calls
         const interested = calls.filter(
-          (c) => c.sentiment === "interested"
+          (c) => c.interest_level === "high" || c.lead_score >= 7
         ).length;
-        const followUp = calls.filter(
-          (c) => c.status === "follow_up_needed"
-        ).length;
-
         document.getElementById("interested").textContent = interested;
-        document.getElementById("followUp").textContent = followUp;
 
-        const avgDuration =
-          calls.length > 0
-            ? Math.round(
-                calls.reduce((sum, c) => sum + (c.call_duration || 0), 0) /
-                  calls.length
-              )
-            : 0;
-        document.getElementById("avgDuration").textContent = avgDuration + "s";
+        const followUp = calls.filter(
+          (c) => c.lead_score >= 5 && c.lead_score < 7
+        ).length;
+        document.getElementById("followUp").textContent = followUp;
       }
 
       function displayCalls(calls) {
@@ -264,22 +263,28 @@
 
         const html = calls
           .map((call) => {
-            const sentimentBadge = getSentimentBadge(call.sentiment);
+            // ⚡ Updated to use local storage field names
+            const sentimentBadge = getSentimentBadge(
+              call.interest_level || call.summary?.interest_level
+            );
             const statusBadge = getStatusBadge(call.status);
-            const date = new Date(call.timestamp).toLocaleString();
-            const duration = call.call_duration || 0;
+            const date = new Date(
+              call.end_time || call.timestamp
+            ).toLocaleString();
+            const duration = call.duration_seconds || 0;
+            const leadScore = call.lead_score || call.summary?.lead_score || 0;
 
             return `
                     <div class="call-row" data-sentiment="${
-                      call.sentiment
+                      call.interest_level
                     }" data-status="${call.status}">
                         <div class="row align-items-center">
                             <div class="col-md-3">
                                 <h6 class="mb-1"><i class="fas fa-user me-2"></i>${
                                   call.customer_name || "Unknown"
                                 }</h6>
-                                <small class="text-muted"><i class="fas fa-phone me-1"></i>${
-                                  call.customer_phone || "N/A"
+                                <small class="text-muted"><i class="fas fa-envelope me-1"></i>${
+                                  call.customer_email || "N/A"
                                 }</small>
                             </div>
                             <div class="col-md-2">
@@ -291,24 +296,17 @@
                             </div>
                             <div class="col-md-2">
                                 <span class="badge bg-secondary"><i class="fas fa-clock me-1"></i>${duration}s</span>
-                                <span class="badge bg-info">Score: ${
-                                  call.lead_score || 0
-                                }/10</span>
+                                <span class="badge bg-info">Score: ${leadScore}/10</span>
                             </div>
                             <div class="col-md-3 text-end">
-                                ${
-                                  call.recording_url
-                                    ? `<a href="${call.recording_url}" class="btn btn-sm btn-primary" target="_blank"><i class="fas fa-play me-1"></i>Recording</a>`
-                                    : ""
-                                }
                                 <button class="btn btn-sm btn-outline-secondary" onclick="viewDetails('${
                                   call.call_sid
                                 }')"><i class="fas fa-info-circle me-1"></i>Details</button>
                             </div>
                         </div>
                         ${
-                          call.conversation_summary
-                            ? `<div class="mt-2"><small><i class="fas fa-comment-dots me-1"></i>${call.conversation_summary}</small></div>`
+                          call.next_steps
+                            ? `<div class="mt-2"><small><i class="fas fa-comment-dots me-1"></i><strong>Next:</strong> ${call.next_steps}</small></div>`
                             : ""
                         }
                     </div>
@@ -321,14 +319,17 @@
 
       function getSentimentBadge(sentiment) {
         const badges = {
+          high: '<span class="badge badge-success"><i class="fas fa-smile me-1"></i>High Interest</span>',
+          medium:
+            '<span class="badge badge-warning"><i class="fas fa-meh me-1"></i>Medium Interest</span>',
+          low: '<span class="badge badge-danger"><i class="fas fa-frown me-1"></i>Low Interest</span>',
+          // Legacy support
           interested:
             '<span class="badge badge-success"><i class="fas fa-smile me-1"></i>Interested</span>',
           neutral:
             '<span class="badge badge-warning"><i class="fas fa-meh me-1"></i>Neutral</span>',
           not_interested:
             '<span class="badge badge-danger"><i class="fas fa-frown me-1"></i>Not Interested</span>',
-          objection:
-            '<span class="badge bg-secondary"><i class="fas fa-question me-1"></i>Objection</span>',
         };
         return (
           badges[sentiment] || '<span class="badge bg-secondary">Unknown</span>'
@@ -337,6 +338,8 @@
 
       function getStatusBadge(status) {
         const badges = {
+          completed:
+            '<span class="badge badge-success"><i class="fas fa-check me-1"></i>Completed</span>',
           follow_up_needed:
             '<span class="badge badge-info"><i class="fas fa-redo me-1"></i>Follow-up</span>',
           demo_scheduled:
@@ -355,8 +358,10 @@
         } else {
           const filtered = allCalls.filter((call) => {
             if (filter === "follow_up")
-              return call.status === "follow_up_needed";
-            return call.sentiment === filter;
+              return call.lead_score >= 5 && call.lead_score < 7;
+            if (filter === "interested")
+              return call.interest_level === "high" || call.lead_score >= 7;
+            return call.interest_level === filter;
           });
           displayCalls(filtered);
         }

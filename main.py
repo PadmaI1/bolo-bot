@@ -35,6 +35,7 @@ from services.intelligent_phone_ai import IntelligentPhoneAI
 from services.ultra_fast_native_sales import UltraFastNativeSales, ExperiencedSalesAgent
 from services.lightning_language_detector import LightningLanguageDetector
 from services.email_service import EmailService
+from services.local_data_storage import storage  # ⚡ NEW: Local data storage
 # from services.salesforce_crm import SalesforceIntegration  # Uncomment when ready to use Salesforce
 
 load_dotenv()
@@ -376,6 +377,28 @@ async def _process_call_completion(call_sid: str, call_type: str, conversation_h
             "crm_update": crm_result,
             "timestamp": datetime.now().isoformat()
         }
+        
+        # ⚡ NEW: Save to local storage (database folder)
+        call_record = {
+            "call_sid": call_sid,
+            "call_type": call_type,
+            "customer_name": customer_name,
+            "customer_email": customer_email,
+            "start_time": phone_service.active_calls[call_sid].get("start_time").isoformat() if call_sid in phone_service.active_calls else datetime.now().isoformat(),
+            "end_time": datetime.now().isoformat(),
+            "duration_seconds": duration,
+            "status": "completed",
+            "summary": summary,
+            "crm_update": crm_result,
+            "lead_score": summary.get("lead_score", summary.get("qualification_score", 0)),
+            "interest_level": summary.get("interest_level", "unknown"),
+            "next_steps": summary.get("next_steps", "Follow up required"),
+            "conversation_history": conversation_history,
+            "email_sent": summary.get("email_sent", False)
+        }
+        
+        # Save to local database
+        storage.save_call_record(call_type, call_record)
         
         logger.info(f"✅ Call {call_sid} processed successfully - Lead Score: {summary.get('lead_score', summary.get('qualification_score', 0))}")
         
@@ -1841,19 +1864,34 @@ async def get_active_calls():
 # 🆕 Dashboard API Endpoints
 @app.get("/api/dashboard/calls")
 async def get_call_dashboard_data(call_type: str = None):
-    """Get dashboard data for completed calls with CRM updates"""
+    """Get dashboard data for completed calls from local storage"""
     try:
-        filtered_calls = call_summaries
-        
+        # ⚡ NEW: Load from local storage instead of memory
         if call_type:
-            filtered_calls = {
-                k: v for k, v in call_summaries.items()
-                if v["summary"].get("call_type", "").lower().replace(" ", "_") == call_type
+            stats = storage.get_dashboard_stats(call_type)
+            recent_calls = storage.get_call_records(call_type, limit=10)
+        else:
+            # Get both types and combine
+            b2b_stats = storage.get_dashboard_stats("b2b_sales")
+            re_stats = storage.get_dashboard_stats("real_estate")
+            
+            stats = {
+                "total_calls": b2b_stats["total_calls"] + re_stats["total_calls"],
+                "avg_duration": (b2b_stats["avg_duration"] + re_stats["avg_duration"]) // 2,
+                "avg_lead_score": (b2b_stats["avg_lead_score"] + re_stats["avg_lead_score"]) // 2,
+                "high_quality_leads": b2b_stats["high_quality_leads"] + re_stats["high_quality_leads"]
             }
+            
+            # Combine recent calls
+            b2b_calls = storage.get_call_records("b2b_sales", limit=5)
+            re_calls = storage.get_call_records("real_estate", limit=5)
+            recent_calls = sorted(
+                b2b_calls + re_calls, 
+                key=lambda x: x.get("end_time", ""), 
+                reverse=True
+            )[:10]
         
-        # Generate stats
-        total_calls = len(filtered_calls)
-        if total_calls == 0:
+        if stats["total_calls"] == 0:
             return {
                 "status": "success",
                 "data": {
@@ -1868,13 +1906,27 @@ async def get_call_dashboard_data(call_type: str = None):
                 "timestamp": datetime.now().isoformat()
             }
         
-        # Calculate stats
-        total_duration = sum([v["summary"].get("duration_seconds", 0) for v in filtered_calls.values()])
-        avg_duration_secs = total_duration // total_calls
+        # Format duration
+        avg_duration_secs = stats["avg_duration"]
         avg_duration = f"{avg_duration_secs // 60}:{avg_duration_secs % 60:02d}"
         
-        # Calculate average score
-        scores = [v["summary"].get("lead_score", v["summary"].get("qualification_score", 0)) for v in filtered_calls.values()]
+        # Calculate conversion rate
+        conversion_rate = f"{(stats['high_quality_leads'] / stats['total_calls'] * 100):.0f}%" if stats['total_calls'] > 0 else "0%"
+        
+        return {
+            "status": "success",
+            "data": {
+                "total_calls": stats["total_calls"],
+                "recent_calls": recent_calls,
+                "summary_stats": {
+                    "total_calls": stats["total_calls"],
+                    "avg_duration": avg_duration,
+                    "conversion_rate": conversion_rate,
+                    "avg_lead_score": f"{stats['avg_lead_score']:.1f}"
+                }
+            },
+            "timestamp": datetime.now().isoformat()
+        }
         avg_score = sum(scores) / len(scores) if scores else 0
         
         # Calculate conversion/interest rate
@@ -1898,6 +1950,61 @@ async def get_call_dashboard_data(call_type: str = None):
         
     except Exception as e:
         logger.error(f"Dashboard data error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ⚡ NEW: Endpoints for loading records from local storage
+@app.get("/api/records/b2b_sales")
+async def get_b2b_records(limit: int = 50):
+    """Get B2B sales call records from local storage"""
+    try:
+        records = storage.get_call_records("b2b_sales", limit=limit)
+        stats = storage.get_dashboard_stats("b2b_sales")
+        
+        return {
+            "status": "success",
+            "records": records,
+            "stats": stats,
+            "total": len(records)
+        }
+    except Exception as e:
+        logger.error(f"Failed to load B2B records: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/records/real_estate")
+async def get_real_estate_records(limit: int = 50):
+    """Get Real Estate call records from local storage"""
+    try:
+        records = storage.get_call_records("real_estate", limit=limit)
+        stats = storage.get_dashboard_stats("real_estate")
+        
+        return {
+            "status": "success",
+            "records": records,
+            "stats": stats,
+            "total": len(records)
+        }
+    except Exception as e:
+        logger.error(f"Failed to load Real Estate records: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/records/{call_type}")
+async def clear_records(call_type: str):
+    """Clear all records for a call type (for testing)"""
+    try:
+        if call_type not in ["b2b_sales", "real_estate"]:
+            raise HTTPException(status_code=400, detail="Invalid call_type. Use 'b2b_sales' or 'real_estate'")
+        
+        success = storage.clear_records(call_type)
+        
+        if success:
+            return {"status": "success", "message": f"Cleared all {call_type} records"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to clear records")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to clear records: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/phone/active-calls_old")

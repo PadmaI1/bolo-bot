@@ -1,0 +1,112 @@
+{
+  "calls": [
+    {
+      "call_sid": "CA1234567890abcdef1234567890abcd",
+      "call_type": "b2b_sales",
+      "customer_name": "Rahul Sharma",
+      "customer_email": "rahul.sharma@techcorp.com",
+      "start_time": "2025-10-12T10:30:15.000Z",
+      "end_time": "2025-10-12T10:33:42.000Z",
+      "duration_seconds": 207,
+      "status": "completed",
+      "summary": {
+        "call_type": "B2B Sales",
+        "duration_seconds": 207,
+        "interest_level": "high",
+        "use_case": "e-learning",
+        "total_exchanges": 4,
+        "next_steps": "Follow up on e-learning demo",
+        "lead_score": 8,
+        "customer_sentiment": "interested"
+      },
+      "crm_update": {
+        "status": "success",
+        "contact_id": "CONTACT_001",
+        "lead_status": "qualified"
+      },
+      "lead_score": 8,
+      "interest_level": "high",
+      "next_steps": "Follow up on e-learning demo - Send pricing for 1000 hours/month",
+      "conversation_history": [
+        {
+          "role": "agent",
+          "text": "Namaste Rahul! Main Shaan hun Murf AI se. Aapka voice content production 80% faster kar sakta hun. 2 minutes hai?"
+        },
+        {
+          "role": "customer",
+          "text": "Yes, sure. What is Murf AI exactly?"
+        },
+        {
+          "role": "agent",
+          "text": "Great! Murf AI is India's leading AI voice synthesis API. Hum aapke training videos, e-learning content, marketing materials ke liye natural Indian voices generate karte hain - just ₹1 per minute. What type of content do you create?"
+        },
+        {
+          "role": "customer",
+          "text": "We create a lot of e-learning modules for corporate training. Currently using voice actors which is very expensive."
+        },
+        {
+          "role": "agent",
+          "text": "Perfect fit! With Murf AI, you can reduce costs by 90% and produce content 10x faster. Aap chahein to Hindi, English, ya dono languages mein content generate kar sakte hain. Shall I share a demo?"
+        },
+        {
+          "role": "customer",
+          "text": "Yes, please send me more information and pricing for high volume usage."
+        }
+      ],
+      "email_sent": true,
+      "saved_at": "2025-10-12T10:34:00.123Z"
+    },
+    {
+      "call_sid": "CA0987654321fedcba0987654321fedc",
+      "call_type": "b2b_sales",
+      "customer_name": "Priya Menon",
+      "customer_email": "priya.m@contentcreators.in",
+      "start_time": "2025-10-12T14:15:30.000Z",
+      "end_time": "2025-10-12T14:17:45.000Z",
+      "duration_seconds": 135,
+      "status": "completed",
+      "summary": {
+        "call_type": "B2B Sales",
+        "duration_seconds": 135,
+        "interest_level": "medium",
+        "use_case": "audiobooks",
+        "total_exchanges": 3,
+        "next_steps": "Send email with case studies",
+        "lead_score": 5,
+        "customer_sentiment": "neutral"
+      },
+      "crm_update": {
+        "status": "success",
+        "contact_id": "CONTACT_002",
+        "lead_status": "nurture"
+      },
+      "lead_score": 5,
+      "interest_level": "medium",
+      "next_steps": "Send case studies for audiobook publishers - Follow up in 1 week",
+      "conversation_history": [
+        {
+          "role": "agent",
+          "text": "Hi Priya! Main Shaan hun Murf AI se. We help audiobook publishers create natural-sounding narrations. Do you have 2 minutes?"
+        },
+        {
+          "role": "customer",
+          "text": "Sure, but we already have a narrator."
+        },
+        {
+          "role": "agent",
+          "text": "Understood! Murf AI doesn't replace your narrator for premium titles, but it's perfect for back-catalog, regional language versions, ya quick releases. Just ₹1 per minute - 95% cost reduction. Interested in knowing more?"
+        },
+        {
+          "role": "customer",
+          "text": "Maybe for regional content. Send me some information."
+        }
+      ],
+      "email_sent": true,
+      "saved_at": "2025-10-12T14:18:10.456Z"
+    }
+  ],
+  "metadata": {
+    "total_calls": 2,
+    "last_updated": "2025-10-12T14:18:10.456Z"
+  }
+}
