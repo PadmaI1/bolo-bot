@@ -17,7 +17,7 @@ class AzureServicesOptimized:
     def __init__(self):
         self.client = AsyncAzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_KEY"),
-            api_version="2025-01-01-preview",  # ✅ Updated to match model router API version
+            api_version="2024-12-01-preview",  # ✅ Correct API version for GPT-4o deployment
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
         
@@ -112,20 +112,20 @@ class AzureServicesOptimized:
             try:
                 start_time = time.time()
                 
-                # Give more time for quality AI responses (as requested by user)
+                # Optimized for GPT-4o with Azure recommended parameters
                 response = await asyncio.wait_for(
                     self.client.chat.completions.create(
                         model=self.model_deployment,
                         messages=messages,
-                        temperature=0.7,           # Balanced for quality and creativity
-                        max_tokens=150,            # Increased for better responses
-                        top_p=0.9,                 # Better variety
-                        frequency_penalty=0.3,     # Reduce repetition
-                        presence_penalty=0.3,      # Encourage new topics
-                        timeout=4.0,               # 4s internal timeout (more time as requested)
-                        stream=False
+                        temperature=0.8,           # Slightly higher for natural conversation (Azure uses 1.0)
+                        max_tokens=200,            # ✅ Perfect for phone responses (short & fast)
+                        top_p=0.95,                # High creativity (Azure uses 1.0)
+                        frequency_penalty=0.0,     # Azure default (let model decide)
+                        presence_penalty=0.0,      # Azure default (let model decide)
+                        timeout=3.0,               # 3s internal timeout (GPT-4o is very fast)
+                        stream=False               # No streaming for stability
                     ),
-                    timeout=5.0  # 5s hard limit for quality AI responses (more time as requested)
+                    timeout=4.0  # 4s hard limit (GPT-4o typically responds in 1-2s)
                 )
                 
                 # Extract content with PROPER safety checks
@@ -135,14 +135,26 @@ class AzureServicesOptimized:
                     content = None
                 else:
                     content = response.choices[0].message.content
+                    finish_reason = response.choices[0].finish_reason
+                    
                     # Debug: Log what we received
                     if content:
-                        self.logger.debug(f"✅ Azure returned content: {content[:100]}...")
+                        self.logger.info(f"✅ Azure returned content ({len(content)} chars): {content[:100]}...")
                     else:
                         # Log full response to debug why content is None
                         self.logger.error(f"❌ Azure OpenAI returned empty content. Full response: {response}")
                         self.logger.error(f"   Model used: {response.model if hasattr(response, 'model') else 'unknown'}")
-                        self.logger.error(f"   Finish reason: {response.choices[0].finish_reason if response.choices else 'no choices'}")
+                        self.logger.error(f"   Finish reason: {finish_reason}")
+                        
+                        # ⚡ CRITICAL: Check if finish_reason is 'length' (token limit reached)
+                        if finish_reason == 'length':
+                            self.logger.error(f"   ⚠️ TOKEN LIMIT REACHED! Increase max_tokens parameter")
+                            if hasattr(response, 'usage'):
+                                usage = response.usage
+                                self.logger.error(f"   Token usage: prompt={usage.prompt_tokens}, completion={usage.completion_tokens}, total={usage.total_tokens}")
+                                if hasattr(usage, 'completion_tokens_details'):
+                                    details = usage.completion_tokens_details
+                                    self.logger.error(f"   Reasoning tokens: {details.reasoning_tokens} (GPT-5-nano uses internal reasoning)")
                 
                 # Now check if content is None or empty BEFORE stripping
                 if content is None or content == "":
@@ -153,13 +165,13 @@ class AzureServicesOptimized:
                 
                 processing_time = (time.time() - start_time) * 1000
                 
-                # Log performance with updated thresholds
-                if processing_time < 2000:  # Target: <2 seconds (good performance)
-                    self.logger.info(f"⚡ FAST LLM: {processing_time:.0f}ms ✅")
-                elif processing_time < 4000:  # Acceptable: 2-4 seconds
-                    self.logger.info(f"⏱️ OK LLM: {processing_time:.0f}ms")
-                else:  # Slow: >4 seconds
-                    self.logger.warning(f"⚠️ SLOW LLM: {processing_time:.0f}ms")
+                # Log performance with GPT-4o optimized thresholds
+                if processing_time < 1500:  # Excellent: <1.5s (GPT-4o target)
+                    self.logger.info(f"⚡ FAST GPT-4o: {processing_time:.0f}ms ✅")
+                elif processing_time < 3000:  # Good: 1.5-3s
+                    self.logger.info(f"⏱️ OK GPT-4o: {processing_time:.0f}ms")
+                else:  # Slow: >3s
+                    self.logger.warning(f"⚠️ SLOW GPT-4o: {processing_time:.0f}ms")
                 
                 # If we have valid text, return it immediately
                 if text:
