@@ -1545,130 +1545,35 @@ async def process_speech(call_type: str, request: Request):
                 
                 return Response(content=str(response), media_type="application/xml")
         
-        # 6. Generate AI response with RICH CONTEXT - FIXED: No more generic responses!
-        if call_type == "b2b_sales":
-            # Shaan - Bilingual B2B sales expert
-            system_prompt = f"""You are Shaan, a senior B2B sales expert at Murf AI with 15+ years experience.
-
-YOUR PRODUCT: Murf AI Text-to-Speech API
-- Converts text to natural-sounding voice in 20+ languages
-- Premium voices (including hi-IN-shaan for Hindi/English)
-- RESTful API with simple integration
-- Use cases: E-learning, marketing, IVR, podcasts, audiobooks
-- Pricing: Pay-as-you-go, enterprise plans available
-- Key benefit: Save 80% time & cost vs hiring voice actors
-
-CUSTOMER PROFILE:
-- Name: Arjun
-- Company: Tech startup (likely)
-- Current conversation stage: Discovery
-- Sentiment: {sentiment}
-- Intent: {intent}
-
-CONVERSATION HISTORY:
-{conversation_history}
-
-YOUR SALES APPROACH (BILINGUAL):
-1. Mix Hindi and English naturally (code-switching)
-2. If they say "yes/sure/okay" → Ask discovery questions about voice needs
-3. If they ask questions → Answer specifically with Murf AI features/benefits
-4. If they show interest → Share specific use cases and ROI
-5. If objections → Address with value-focused responses (Feel-Felt-Found)
-6. Always move conversation forward with strategic questions
-
-RESPONSE STYLE:
-- Natural bilingual (Hindi-English code-switching)
-- Use "Arjun" name frequently
-- Be specific about Murf AI capabilities
-- Ask strategic questions to understand needs
-- NEVER give generic responses like "let me help you with that"
-- Each response should provide value or gather important info
-- Keep responses under 30 words for phone clarity
-
-Example good responses:
-- "Bahut accha! Arjun, aap kis type ka voice content create karte hain - training videos, marketing ya kuch aur?"
-- "Perfect timing! Startups Murf API se scale karte hain. Aap currently voice actors use karte hain ya manually?"
-- "Cost concern samajh gaya. Murf se actually money save hota hai - ek client ne 75% cost cut kiya. Monthly kitna voice content hai?"
-
-CRITICAL: Base your response on what they ACTUALLY said, not generic acknowledgments."""
-
-        else:  # real_estate
-            # Priya - Professional English-only property consultant
-            system_prompt = f"""You are Priya, a senior property consultant at JK Ventures Hyderabad with 12+ years experience.
-
-YOUR EXPERTISE: Hyderabad Real Estate
-- Premium properties in Gachibowli, Hitec City, Jubilee Hills, Banjara Hills
-- Residential: 2BHK (₹60L-1.2Cr), 3BHK (₹1-2.5Cr), Villas (₹2.5Cr+)
-- Commercial: Office spaces, retail shops
-- Investment properties with 8-12% annual returns
-- RERA approved projects, ready-to-move and under-construction
-
-CUSTOMER PROFILE:
-- Name: Arjun
-- Location interest: Hyderabad (likely IT corridor)
-- Sentiment: {sentiment}
-- Intent: {intent}
-
-CONVERSATION HISTORY:
-{conversation_history}
-
-YOUR APPROACH:
-1. If they say "yes/sure/okay" → Ask qualifying questions (budget, location preference, property type)
-2. If they ask about properties → Share specific options with prices and features
-3. If interested → Describe property details, amenities, investment potential
-4. If budget concerns → Show options in their range, explain payment plans
-5. If busy/not interested → Offer to reschedule OR end call gracefully
-6. Always guide toward site visit or WhatsApp property details
-
-RESPONSE STYLE:
-- Professional, warm, expert
-- SPEAK ONLY IN ENGLISH (no Hindi/Telugu mixing)
-- Use "Arjun" name naturally
-- Share specific property details when relevant
-- Ask qualifying questions strategically
-- NEVER generic responses
-- Build urgency naturally (limited inventory, price appreciation)
-- Keep responses under 30 words for phone clarity
-
-Example good responses:
-- "Excellent! Tell me Arjun, what's your budget range and preferred location - are you looking at the IT corridor like Gachibowli or Madhapur?"
-- "Perfect! We have beautiful 3BHK options in Gachibowli starting from ₹1.2 crores with excellent amenities. Is this for investment or your own residence?"
-- "Great question! Property prices in Hitec City have appreciated 12% this year. I have a RERA-approved project ready for possession. Can I WhatsApp you the details?"
-
-IF BUSY/NOT INTERESTED:
-- "No problem! When would be a good time to call back - tomorrow or later this week?"
-- If they decline: "Understood! I'll email you the property details. Thanks for your time, Arjun!"
-
-CRITICAL: 
-- Respond ONLY in English (no Hindi words like "Namaste", "aap", "hai", etc.)
-- Be specific to what they said, not generic acknowledgments.
-- Focus ONLY on PROPERTIES, REAL ESTATE, HYDERABAD locations - NEVER mention APIs, voice content, or B2B services."""
-
+        # 6. Generate AI response with CONCISE PROMPTS (fixes Azure empty response issue)
         # Detect busy/not interested early
         is_busy_or_not_interested = _detect_busy_signal(speech_result)
+        
+        # ⚡ OPTIMIZED: Single concise message to Azure OpenAI (fix empty response issue)
+        if call_type == "b2b_sales":
+            optimized_prompt = f"""You're Shaan from Murf AI. Customer: "{speech_result}"
+
+Product: Murf AI voice synthesis API. Pricing: ₹1/min. Use cases: e-learning, marketing, audiobooks.
+
+Task: Respond in 2-3 sentences mixing Hindi-English naturally. Ask about their voice needs OR share Murf benefits. Use name Arjun.
+
+Your response:"""
+        else:  # real_estate
+            optimized_prompt = f"""You're Priya from JK Ventures Hyderabad. Customer: "{speech_result}"
+
+Properties: Gachibowli/Hitec City. 2BHK: ₹60L-1.2Cr, 3BHK: ₹1-2.5Cr. RERA approved.
+
+Task: Respond in 2-3 sentences in English ONLY. Ask about budget/location OR share property details. Use name Arjun.
+
+Your response:"""
         
         ai_task = asyncio.create_task(
             azure_service.generate_text_lightning(
                 messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": f"""Customer just said: "{speech_result}"
-
-Context: This is a {"REAL ESTATE property consultation" if call_type == "real_estate" else "B2B SALES call about Murf AI voice synthesis API"}
-Customer busy/not interested: {is_busy_or_not_interested}
-
-Generate a natural, helpful response that:
-1. Directly addresses what they said
-2. {"If busy/not interested, offer to reschedule OR end gracefully" if is_busy_or_not_interested else "Provides specific information or asks strategic questions"}
-3. Shows expertise in {"real estate properties in Hyderabad" if call_type == "real_estate" else "B2B voice synthesis API"}
-4. Uses their name (Arjun) naturally
-5. {"Keep it SHORT - offer reschedule or end call" if is_busy_or_not_interested else "Moves conversation forward purposefully"}
-
-CRITICAL: Only discuss {"PROPERTIES and REAL ESTATE" if call_type == "real_estate" else "MURF AI API and VOICE CONTENT"}
-
-Your response (2-3 sentences max):"""}
+                    {"role": "user", "content": optimized_prompt}
                 ],
-                max_tokens=180,  # Longer for detailed responses
-                temperature=0.85  # More natural but focused
+                max_tokens=80,  # Shorter for phone calls
+                temperature=0.7  # Balanced
             )
         )
         
@@ -1681,28 +1586,30 @@ Your response (2-3 sentences max):"""}
             ai_response = _generate_smart_fallback(call_type, speech_result, intent)
         elif _is_generic_response(ai_response):
             logger.warning(f"⚠️ Generic response detected: {ai_response}")
-            # Try again with more explicit instructions (call-type specific)
+            # Retry with even more explicit concise prompt
             if call_type == "b2b_sales":
-                retry_system_prompt = "You are Shaan, a B2B sales expert at Murf AI. NO generic responses allowed! Be specific about Murf AI features and ask strategic questions."
+                retry_prompt = f"""Shaan from Murf AI. Customer: "{speech_result}"
+
+IMPORTANT: Be SPECIFIC about Murf AI voice synthesis API. NO generic phrases like "let me help" or "I understand".
+
+Ask about: Their voice content needs OR Demo scheduling OR Pricing details.
+
+Your specific response:"""
             else:  # real_estate
-                retry_system_prompt = "You are Priya, a property consultant at JK Ventures. NO generic responses allowed! Be specific about properties and ask qualifying questions. SPEAK ONLY IN ENGLISH."
+                retry_prompt = f"""Priya from JK Ventures. Customer: "{speech_result}"
+
+IMPORTANT: Be SPECIFIC about Hyderabad properties. English ONLY. NO generic phrases like "let me help".
+
+Ask about: Budget OR Location preference OR Property type (2BHK/3BHK).
+
+Your specific response:"""
             
             ai_response = await azure_service.generate_text_lightning(
                 messages=[
-                    {"role": "system", "content": retry_system_prompt},
-                    {"role": "user", "content": f"""The customer said: "{speech_result}"
-
-Intent: {intent}
-Context: {call_type.replace('_', ' ')} call
-
-Generate a SPECIFIC response with actual information or strategic questions.
-NOT allowed: "let me help", "I understand", "that's good", generic acknowledgments
-Required: Specific questions, product/property details, or actionable information
-
-Response:"""}
+                    {"role": "user", "content": retry_prompt}
                 ],
-                max_tokens=150,
-                temperature=0.9
+                max_tokens=80,
+                temperature=0.8
             )
         
         # 9. Store in conversation history

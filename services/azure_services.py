@@ -17,7 +17,7 @@ class AzureServicesOptimized:
     def __init__(self):
         self.client = AsyncAzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_KEY"),
-            api_version="2024-10-01-preview",
+            api_version="2025-01-01-preview",  # ✅ Updated to match model router API version
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
         )
         
@@ -112,33 +112,40 @@ class AzureServicesOptimized:
             try:
                 start_time = time.time()
                 
-                # Balanced timeout for quality AI responses
+                # Give more time for quality AI responses (as requested by user)
                 response = await asyncio.wait_for(
                     self.client.chat.completions.create(
                         model=self.model_deployment,
                         messages=messages,
-                        temperature=0.4,           # Balanced for quality
-                        max_tokens=80,             # Enough for good responses
-                        top_p=0.8,                 # Better variety
-                        frequency_penalty=0,       # Minimal processing
-                        presence_penalty=0,        # Minimal processing
-                        timeout=2.5,               # 2.5s internal timeout (faster)
+                        temperature=0.7,           # Balanced for quality and creativity
+                        max_tokens=150,            # Increased for better responses
+                        top_p=0.9,                 # Better variety
+                        frequency_penalty=0.3,     # Reduce repetition
+                        presence_penalty=0.3,      # Encourage new topics
+                        timeout=4.0,               # 4s internal timeout (more time as requested)
                         stream=False
                     ),
-                    timeout=3.0  # Hard limit: 3s for quality AI responses (faster)
+                    timeout=5.0  # 5s hard limit for quality AI responses (more time as requested)
                 )
                 
                 # Extract content with PROPER safety checks
                 # ✅ Check if content exists BEFORE stripping
                 if not response.choices:
-                    self.logger.error("❌ Azure OpenAI returned no choices")
+                    self.logger.error(f"❌ Azure OpenAI returned no choices. Response: {response}")
                     content = None
                 else:
                     content = response.choices[0].message.content
+                    # Debug: Log what we received
+                    if content:
+                        self.logger.debug(f"✅ Azure returned content: {content[:100]}...")
+                    else:
+                        # Log full response to debug why content is None
+                        self.logger.error(f"❌ Azure OpenAI returned empty content. Full response: {response}")
+                        self.logger.error(f"   Model used: {response.model if hasattr(response, 'model') else 'unknown'}")
+                        self.logger.error(f"   Finish reason: {response.choices[0].finish_reason if response.choices else 'no choices'}")
                 
                 # Now check if content is None or empty BEFORE stripping
                 if content is None or content == "":
-                    self.logger.error("❌ Azure OpenAI returned empty content")
                     text = ""
                 else:
                     # Content exists, strip whitespace
@@ -146,10 +153,12 @@ class AzureServicesOptimized:
                 
                 processing_time = (time.time() - start_time) * 1000
                 
-                # Log performance with realistic thresholds
-                if processing_time < 1000:  # Target: <1 second
+                # Log performance with updated thresholds
+                if processing_time < 2000:  # Target: <2 seconds (good performance)
                     self.logger.info(f"⚡ FAST LLM: {processing_time:.0f}ms ✅")
-                else:
+                elif processing_time < 4000:  # Acceptable: 2-4 seconds
+                    self.logger.info(f"⏱️ OK LLM: {processing_time:.0f}ms")
+                else:  # Slow: >4 seconds
                     self.logger.warning(f"⚠️ SLOW LLM: {processing_time:.0f}ms")
                 
                 # If we have valid text, return it immediately
@@ -159,21 +168,9 @@ class AzureServicesOptimized:
                 # Only use fallback if Azure truly returned nothing
                 self.logger.warning("⚠️ Using contextual fallback due to empty Azure response")
                 
-                # Return contextual fallback based on message content
-                last_message = messages[-1]['content'].lower() if messages else ""
-                
-                if "marketing" in last_message or "video" in last_message:
-                    return "Perfect! For marketing videos, Murf's API can generate voices in multiple languages with consistent quality. What's your typical monthly video volume?"
-                elif "interested" in last_message or "yes" in last_message or "sure" in last_message:
-                    return "Excellent! Let me show you exactly how our API can cut your voice production time by 80%. What's your current process?"
-                elif "price" in last_message or "cost" in last_message:
-                    return "Great question! Our pricing is very flexible - pay-as-you-go starting from just ₹1 per minute. For enterprise needs, we have custom plans. What's your monthly usage estimate?"
-                elif "demo" in last_message:
-                    return "Absolutely! I can arrange a live demo today. Would you prefer a technical walkthrough or a business overview? And what time works best for you?"
-                elif "audio" in last_message or "book" in last_message:
-                    return "Perfect! Audiobooks are a great use case. Our API supports 120+ voices in 20+ languages with SSML control. How many hours of content do you produce monthly?"
-                else:
-                    return "That's helpful to know. Can you tell me more about your specific voice content needs so I can show you the best solution?"
+                # ⚡ IMPORTANT: Return EMPTY string so calling code handles fallback with proper call_type context
+                # This prevents mixing B2B Sales responses into Real Estate calls
+                return ""
                 
             except Exception as e:
                 self.logger.error(f"❌ Lightning LLM failed: {e}")
