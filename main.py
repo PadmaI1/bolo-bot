@@ -250,6 +250,19 @@ def _detect_intent(speech_result: str) -> str:
     
     return "general_inquiry"
 
+def _detect_busy_signal(speech_result: str) -> bool:
+    """Detect if customer is busy or not interested - should end call quickly"""
+    text_lower = speech_result.lower()
+    
+    busy_signals = [
+        "busy", "not now", "later", "call back", "not interested",
+        "no time", "can't talk", "in a meeting", "driving",
+        "not right now", "maybe later", "another time", "not today",
+        "no thanks", "not looking", "don't need", "already have"
+    ]
+    
+    return any(signal in text_lower for signal in busy_signals)
+
 def _is_generic_response(response: str) -> bool:
     """Check if response is generic/unhelpful"""
     generic_phrases = [
@@ -358,6 +371,7 @@ async def _process_call_completion(call_sid: str, call_type: str, conversation_h
         
         # Store for dashboard display
         call_summaries[call_sid] = {
+            "call_sid": call_sid,  # ✅ Store call_sid
             "summary": summary,
             "crm_update": crm_result,
             "timestamp": datetime.now().isoformat()
@@ -699,6 +713,16 @@ async def real_estate_portal(request: Request):
         "websocket_url": f"ws://{request.headers.get('host', 'localhost')}/ws/real_estate"
     })
 
+@app.get("/b2b_records.html", response_class=HTMLResponse)
+async def b2b_records_page(request: Request):
+    """B2B Sales Call Records Page"""
+    return templates.TemplateResponse("b2b_records.html", {"request": request})
+
+@app.get("/real_estate_records.html", response_class=HTMLResponse)
+async def real_estate_records_page(request: Request):
+    """Real Estate Call Records Page"""
+    return templates.TemplateResponse("real_estate_records.html", {"request": request})
+
 # Browser WebSocket endpoints (commented out - not needed for phone calls)
 @app.websocket("/ws/{industry}")
 async def websocket_endpoint(websocket: WebSocket, industry: str):
@@ -815,16 +839,67 @@ async def get_performance_metrics():
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/analytics/dashboard")
-async def get_analytics_dashboard():
-    """Get analytics dashboard data - ✅ FIXED: Removed websocket_manager dependency"""
+async def get_analytics_dashboard(call_type: Optional[str] = None):
+    """Get analytics dashboard data - ✅ Supports filtering by call_type"""
     try:
         # Calculate uptime
         uptime = datetime.now() - app_state["startup_time"]
         uptime_seconds = int(uptime.total_seconds())
         
-        # Get call summaries for dashboard
-        total_calls = len(call_summaries)
-        recent_calls = list(call_summaries.values())[-10:]  # Last 10 calls
+        # Get call summaries for dashboard with optional filtering
+        all_calls = list(call_summaries.values())
+        
+        # Filter by call_type if provided and format for frontend
+        formatted_calls = []
+        for call_data in all_calls:
+            summary = call_data.get("summary", {})
+            call_type_name = summary.get("call_type", "")
+            
+            # Skip if filtering and doesn't match
+            if call_type:
+                if call_type == "b2b_sales" and call_type_name != "B2B Sales":
+                    continue
+                elif call_type == "real_estate" and call_type_name != "Real Estate":
+                    continue
+            
+            # Format call for frontend
+            formatted_call = {
+                "call_sid": call_data.get("call_sid", "unknown"),
+                "timestamp": call_data.get("timestamp", datetime.now().isoformat()),
+                "call_type": call_type_name,
+                "customer_name": "Arjun Mehta",  # TODO: Get from call data
+                "customer_phone": os.getenv("MY_NUMBER", "+919999999999"),
+                "call_duration": summary.get("duration_seconds", 0),
+                "sentiment": summary.get("customer_sentiment", "neutral"),
+                "status": "completed",
+                "conversation_summary": summary.get("next_steps", ""),
+                "recording_url": None,  # TODO: Add if available
+            }
+            
+            # Add type-specific fields
+            if call_type_name == "B2B Sales":
+                formatted_call.update({
+                    "lead_score": summary.get("lead_score", 0),
+                    "interest_level": summary.get("interest_level", "low"),
+                    "use_case": summary.get("use_case", "general"),
+                    "status": "follow_up_needed" if summary.get("interest_level") == "high" else "completed"
+                })
+            elif call_type_name == "Real Estate":
+                formatted_call.update({
+                    "lead_score": summary.get("qualification_score", 0),
+                    "budget": summary.get("budget_range", "not_specified"),
+                    "location": summary.get("location_preference", "any"),
+                    "property_type": summary.get("property_type", "not_specified"),
+                    "status": "site_visit_scheduled" if summary.get("qualification_score", 0) >= 7 else "follow_up_needed"
+                })
+            
+            formatted_calls.append(formatted_call)
+        
+        # Get recent calls (last 20)
+        recent_calls = formatted_calls[-20:] if formatted_calls else []
+        recent_calls.reverse()  # Most recent first
+        
+        total_calls = len(all_calls)
         
         # Get CRM stats
         crm_stats = {}
@@ -851,8 +926,9 @@ async def get_analytics_dashboard():
             },
             "calls": {
                 "total": total_calls,
-                "recent": recent_calls
+                "filtered": len(formatted_calls) if call_type else total_calls
             },
+            "recent_calls": recent_calls,
             "crm": crm_stats,
             "timestamp": datetime.now().isoformat()
         }
@@ -1541,7 +1617,8 @@ YOUR APPROACH:
 2. If they ask about properties → Share specific options with prices and features
 3. If interested → Describe property details, amenities, investment potential
 4. If budget concerns → Show options in their range, explain payment plans
-5. Always guide toward site visit or WhatsApp property details
+5. If busy/not interested → Offer to reschedule OR end call gracefully
+6. Always guide toward site visit or WhatsApp property details
 
 RESPONSE STYLE:
 - Professional, warm, expert
@@ -1558,22 +1635,35 @@ Example good responses:
 - "Perfect! We have beautiful 3BHK options in Gachibowli starting from ₹1.2 crores with excellent amenities. Is this for investment or your own residence?"
 - "Great question! Property prices in Hitec City have appreciated 12% this year. I have a RERA-approved project ready for possession. Can I WhatsApp you the details?"
 
+IF BUSY/NOT INTERESTED:
+- "No problem! When would be a good time to call back - tomorrow or later this week?"
+- If they decline: "Understood! I'll email you the property details. Thanks for your time, Arjun!"
+
 CRITICAL: 
 - Respond ONLY in English (no Hindi words like "Namaste", "aap", "hai", etc.)
-- Be specific to what they said, not generic acknowledgments."""
+- Be specific to what they said, not generic acknowledgments.
+- Focus ONLY on PROPERTIES, REAL ESTATE, HYDERABAD locations - NEVER mention APIs, voice content, or B2B services."""
 
+        # Detect busy/not interested early
+        is_busy_or_not_interested = _detect_busy_signal(speech_result)
+        
         ai_task = asyncio.create_task(
             azure_service.generate_text_lightning(
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": f"""Customer just said: "{speech_result}"
 
+Context: This is a {"REAL ESTATE property consultation" if call_type == "real_estate" else "B2B SALES call about Murf AI voice synthesis API"}
+Customer busy/not interested: {is_busy_or_not_interested}
+
 Generate a natural, helpful response that:
 1. Directly addresses what they said
-2. Provides specific information or asks strategic questions
-3. Shows expertise in your field
+2. {"If busy/not interested, offer to reschedule OR end gracefully" if is_busy_or_not_interested else "Provides specific information or asks strategic questions"}
+3. Shows expertise in {"real estate properties in Hyderabad" if call_type == "real_estate" else "B2B voice synthesis API"}
 4. Uses their name (Arjun) naturally
-5. Moves conversation forward purposefully
+5. {"Keep it SHORT - offer reschedule or end call" if is_busy_or_not_interested else "Moves conversation forward purposefully"}
+
+CRITICAL: Only discuss {"PROPERTIES and REAL ESTATE" if call_type == "real_estate" else "MURF AI API and VOICE CONTENT"}
 
 Your response (2-3 sentences max):"""}
                 ],
@@ -1664,6 +1754,12 @@ Response:"""}
             # Create TwiML response
             response = VoiceResponse()
             response.play(audio_url)
+            
+            # 🔥 CRITICAL: End call immediately if busy/not interested (don't drag on!)
+            if is_busy_or_not_interested:
+                logger.info("📞 Customer busy/not interested - ending call gracefully")
+                response.hangup()
+                return HTMLResponse(content=str(response), media_type="application/xml")
             
             # Continue conversation based on sentiment
             should_continue = sentiment in ["interested", "neutral", "objection"]

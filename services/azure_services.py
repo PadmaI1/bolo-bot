@@ -122,15 +122,27 @@ class AzureServicesOptimized:
                         top_p=0.8,                 # Better variety
                         frequency_penalty=0,       # Minimal processing
                         presence_penalty=0,        # Minimal processing
-                        timeout=3.0,               # 3s internal timeout
+                        timeout=2.5,               # 2.5s internal timeout (faster)
                         stream=False
                     ),
-                    timeout=3.5  # Hard limit: 3.5s for quality AI responses
+                    timeout=3.0  # Hard limit: 3s for quality AI responses (faster)
                 )
                 
-                # Extract content with safety check
-                content = response.choices[0].message.content
-                text = content.strip() if content else ""
+                # Extract content with PROPER safety checks
+                # ✅ Check if content exists BEFORE stripping
+                if not response.choices:
+                    self.logger.error("❌ Azure OpenAI returned no choices")
+                    content = None
+                else:
+                    content = response.choices[0].message.content
+                
+                # Now check if content is None or empty BEFORE stripping
+                if content is None or content == "":
+                    self.logger.error("❌ Azure OpenAI returned empty content")
+                    text = ""
+                else:
+                    # Content exists, strip whitespace
+                    text = content.strip()
                 
                 processing_time = (time.time() - start_time) * 1000
                 
@@ -140,27 +152,28 @@ class AzureServicesOptimized:
                 else:
                     self.logger.warning(f"⚠️ SLOW LLM: {processing_time:.0f}ms")
                 
-                # Better error handling for empty responses with contextual fallbacks
-                if not text or text.strip() == "":
-                    self.logger.error("❌ Azure OpenAI returned empty content")
-                    
-                    # Return contextual fallback based on message content
-                    last_message = messages[-1]['content'].lower() if messages else ""
-                    
-                    if "marketing" in last_message:
-                        return "Perfect! For marketing videos, Murf's API can generate voices in multiple languages with consistent quality. What's your typical monthly video volume?"
-                    elif "interested" in last_message or "yes" in last_message or "sure" in last_message:
-                        return "Excellent! Let me show you exactly how our API can cut your voice production time by 80%. What's your current process?"
-                    elif "price" in last_message or "cost" in last_message:
-                        return "Great question! Our pricing is very flexible - pay-as-you-go starting from just ₹1 per minute. For enterprise needs, we have custom plans. What's your monthly usage estimate?"
-                    elif "demo" in last_message:
-                        return "Absolutely! I can arrange a live demo today. Would you prefer a technical walkthrough or a business overview? And what time works best for you?"
-                    else:
-                        return "That's helpful to know. Can you tell me more about your specific voice content needs so I can show you the best solution?"
+                # If we have valid text, return it immediately
+                if text:
+                    return text
                 
-                return text
+                # Only use fallback if Azure truly returned nothing
+                self.logger.warning("⚠️ Using contextual fallback due to empty Azure response")
                 
-                return text
+                # Return contextual fallback based on message content
+                last_message = messages[-1]['content'].lower() if messages else ""
+                
+                if "marketing" in last_message or "video" in last_message:
+                    return "Perfect! For marketing videos, Murf's API can generate voices in multiple languages with consistent quality. What's your typical monthly video volume?"
+                elif "interested" in last_message or "yes" in last_message or "sure" in last_message:
+                    return "Excellent! Let me show you exactly how our API can cut your voice production time by 80%. What's your current process?"
+                elif "price" in last_message or "cost" in last_message:
+                    return "Great question! Our pricing is very flexible - pay-as-you-go starting from just ₹1 per minute. For enterprise needs, we have custom plans. What's your monthly usage estimate?"
+                elif "demo" in last_message:
+                    return "Absolutely! I can arrange a live demo today. Would you prefer a technical walkthrough or a business overview? And what time works best for you?"
+                elif "audio" in last_message or "book" in last_message:
+                    return "Perfect! Audiobooks are a great use case. Our API supports 120+ voices in 20+ languages with SSML control. How many hours of content do you produce monthly?"
+                else:
+                    return "That's helpful to know. Can you tell me more about your specific voice content needs so I can show you the best solution?"
                 
             except Exception as e:
                 self.logger.error(f"❌ Lightning LLM failed: {e}")
