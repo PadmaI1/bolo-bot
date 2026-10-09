@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class SalesforceIntegration:
-    """Production-ready Salesforce CRM integration for VoiceFlow AI Platform"""
+    """Production-ready Salesforce CRM integration for BoloBot AI Platform"""
     
     def __init__(self):
         self.logger = logging.getLogger(__name__)
@@ -206,7 +206,7 @@ class SalesforceIntegration:
             "Email": data.get("email", ""),
             "Company": data.get("company", data.get("organization", "")),
             "Title": data.get("title", data.get("designation", "")),
-            "LeadSource": "VoiceFlow AI Platform"
+            "LeadSource": "BoloBot AI Platform"
         }
     
     async def _find_or_create_contact(self, contact_info: Dict[str, str], industry: str) -> Optional[Dict[str, Any]]:
@@ -363,7 +363,7 @@ class SalesforceIntegration:
                     "Name": f"{contact.get('FirstName', '')} {contact.get('LastName', '')} - AI Generated",
                     "StageName": deal_stage,
                     "CloseDate": (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"),  # 30 days from now
-                    "LeadSource": "VoiceFlow AI Platform",
+                    "LeadSource": "BoloBot AI Platform",
                     "Type": "New Customer",
                     "Description": f"Opportunity created from AI voice analysis on {datetime.now().strftime('%Y-%m-%d')}"
                 }
@@ -399,7 +399,7 @@ class SalesforceIntegration:
                 "Qualification_Score__c": qualification_data.get("qualification_score", 0),
                 "Next_Action__c": self._determine_next_action(qualification_data),
                 "Created_Date__c": datetime.now().isoformat(),
-                "Source__c": "VoiceFlow AI Platform"
+                "Source__c": "BoloBot AI Platform"
             }
             
             # Add financing information if available

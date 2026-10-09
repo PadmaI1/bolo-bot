@@ -48,7 +48,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('voiceflow_ai.log', encoding='utf-8'),
+        logging.FileHandler('bolobot_ai.log', encoding='utf-8'),
         logging.StreamHandler()
     ]
 )
@@ -306,7 +306,7 @@ def _generate_smart_fallback(call_type: str, customer_speech: str, intent: str) 
         elif intent == "property_inquiry":
             return "We have amazing properties! Tell me your budget, preferred location, and whether you want 2BHK, 3BHK, or a villa?"
         elif intent == "pricing_inquiry":
-            return "Property prices in Gachibowli start from ₹60 lakhs for 2BHK and ₹1.2 crores for 3BHK. What's your budget range, Arjun?"
+            return "Property prices in Gachibowli start from ₹60 lakhs for 2BHK and ₹1.2 crores for 3BHK. What's your budget range, Padma?"
         else:
             return "Perfect! Are you looking for a property for your own residence or investment purposes? And what's your budget range?"
 
@@ -379,12 +379,19 @@ async def _process_call_completion(call_sid: str, call_type: str, conversation_h
         }
         
         # ⚡ NEW: Save to local storage (database folder)
+        # Get start_time safely
+        start_time = datetime.now()
+        if call_sid in phone_service.active_calls:
+            call_start = phone_service.active_calls[call_sid].get("start_time")
+            if call_start:
+                start_time = call_start
+        
         call_record = {
             "call_sid": call_sid,
             "call_type": call_type,
             "customer_name": customer_name,
             "customer_email": customer_email,
-            "start_time": phone_service.active_calls[call_sid].get("start_time").isoformat() if call_sid in phone_service.active_calls else datetime.now().isoformat(),
+            "start_time": start_time.isoformat(),
             "end_time": datetime.now().isoformat(),
             "duration_seconds": duration,
             "status": "completed",
@@ -394,7 +401,8 @@ async def _process_call_completion(call_sid: str, call_type: str, conversation_h
             "interest_level": summary.get("interest_level", "unknown"),
             "next_steps": summary.get("next_steps", "Follow up required"),
             "conversation_history": conversation_history,
-            "email_sent": summary.get("email_sent", False)
+            "email_sent": summary.get("email_sent", False),
+            "recording_url": None  # Will be updated by recording webhook
         }
         
         # Save to local database
@@ -493,7 +501,7 @@ async def _update_sales_crm(call_sid: str, summary: Dict[str, Any]) -> Dict[str,
     """Update CRM with sales call data"""
     lead_data = {
         "call_sid": call_sid,
-        "lead_name": "Arjun Mehta",
+        "lead_name": "Padma Iyer",
         "company": "Anurag University",
         "interest_level": summary.get("interest_level", "low"),
         "use_case": summary.get("use_case", "general"),
@@ -513,7 +521,7 @@ async def _update_real_estate_crm(call_sid: str, summary: Dict[str, Any]) -> Dic
     """Update CRM with real estate call data"""
     lead_data = {
         "call_sid": call_sid,
-        "lead_name": "Arjun Mehta",
+        "lead_name": "Padma Iyer",
         "phone": os.getenv("MY_NUMBER", "+919999999999"),
         "budget_range": summary.get("budget_range", "not_specified"),
         "location_preference": summary.get("location_preference", "any"),
@@ -652,7 +660,7 @@ async def lifespan(app: FastAPI):
         # Start background health checks
         health_check_task = asyncio.create_task(periodic_health_check())
         
-        logger.info("VoiceFlow AI Platform fully initialized and ready")
+        logger.info("BoloBot AI Platform fully initialized and ready")
         
         yield  # Application runs here
         
@@ -668,7 +676,7 @@ async def lifespan(app: FastAPI):
         raise
     
     # Shutdown
-    logger.info("Shutting down VoiceFlow AI Platform...")
+    logger.info("Shutting down BoloBot AI Platform...")
     try:
         if azure_service:
             await azure_service.close()
@@ -680,7 +688,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifecycle management
 app = FastAPI(
-    title="VoiceFlow AI Platform",
+    title="BoloBot AI Platform",
     description="Ultra-low latency multi-industry voice AI platform powered by Azure OpenAI & Murf AI",
     version="2.0.0",
     docs_url="/docs",
@@ -708,7 +716,7 @@ async def dashboard(request: Request):
     """Main platform dashboard"""
     return templates.TemplateResponse("admin_panel.html", {
         "request": request,
-        "platform_name": "VoiceFlow AI Platform",
+        "platform_name": "BoloBot AI Platform",
         "version": "2.0.0",
         "service_health": app_state["service_health"]
     })
@@ -890,7 +898,7 @@ async def get_analytics_dashboard(call_type: Optional[str] = None):
                 "call_sid": call_data.get("call_sid", "unknown"),
                 "timestamp": call_data.get("timestamp", datetime.now().isoformat()),
                 "call_type": call_type_name,
-                "customer_name": "Arjun Mehta",  # TODO: Get from call data
+                "customer_name": "Padma Iyer",  # TODO: Get from call data
                 "customer_phone": os.getenv("MY_NUMBER", "+919999999999"),
                 "call_duration": summary.get("duration_seconds", 0),
                 "sentiment": summary.get("customer_sentiment", "neutral"),
@@ -932,7 +940,7 @@ async def get_analytics_dashboard(call_type: Optional[str] = None):
         return {
             "status": "success",
             "platform": {
-                "name": "VoiceFlow AI Platform",
+                "name": "BoloBot AI Platform",
                 "version": "2.0.0",
                 "uptime_seconds": uptime_seconds,
                 "health": app_state["service_health"]
@@ -1384,7 +1392,7 @@ async def generate_twiml(call_type: str, request: Request):
         
         # Get lead info (you can fetch from database or CRM here)
         lead_info = {
-            "name": "Arjun",  # Get from your database/CRM
+            "name": "Padma",  # Get from your database/CRM
             "company": "Your Company" if call_type == "b2b_sales" else None,
             "property_interest": "Hyderabad" if call_type == "real_estate" else None
         }
@@ -1393,11 +1401,11 @@ async def generate_twiml(call_type: str, request: Request):
         if call_type == "real_estate":
             # Real Estate uses Priya (ENGLISH ONLY - professional, clear)
             voice_id = "en-IN-priya"  # ✅ FIXED: English-only for better clarity
-            opening_text = "Hello Arjun! This is Priya from JK Ventures. I'm calling about some premium properties we have in Gachibowli and Hitec City, Hyderabad. Do you have 2 minutes to talk?"
+            opening_text = "Hello Padma! This is Priya from BB Ventures. I'm calling about some premium properties we have in Gachibowli and Hitec City, Hyderabad. Do you have 2 minutes to talk?"
         else:  # b2b_sales
             # B2B Sales uses Shaan (premium bilingual voice)
             voice_id = "hi-IN-shaan"
-            opening_text = "Hi Arjun, main Shaan hun Murf AI se. Aapka voice content production 80% faster kar sakta hun. 2 minutes hai?"
+            opening_text = "Hi Padma, main Shaan hun Murf AI se. Aapka voice content production 80% faster kar sakta hun. 2 minutes hai?"
         
         logger.info(f"🤖 Opening Message: {opening_text}")
         logger.info(f"🎙️ Using Voice: {voice_id}")
@@ -1516,7 +1524,7 @@ async def process_speech(call_type: str, request: Request):
         logger.info(f"🎯 Intent: {intent}")
         
         # 5.5. ⚡ TRY SMART RESPONSE FIRST (bypass AI entirely for common intents)
-        smart_response = get_smart_response(speech_result, customer_name="Arjun")
+        smart_response = get_smart_response(speech_result, customer_name="Padma")
         if smart_response:
             logger.info(f"⚡⚡⚡ INSTANT SMART RESPONSE (no AI needed): {smart_response}")
             ai_response = smart_response
@@ -1578,15 +1586,15 @@ async def process_speech(call_type: str, request: Request):
 
 Product: Murf AI voice synthesis API. Pricing: ₹1/min. Use cases: e-learning, marketing, audiobooks.
 
-Task: Respond in 2-3 sentences mixing Hindi-English naturally. Ask about their voice needs OR share Murf benefits. Use name Arjun.
+Task: Respond in 2-3 sentences mixing Hindi-English naturally. Ask about their voice needs OR share Murf benefits. Use name Padma.
 
 Your response:"""
         else:  # real_estate
-            optimized_prompt = f"""You're Priya from JK Ventures Hyderabad. Customer: "{speech_result}"
+            optimized_prompt = f"""You're Priya from BB Ventures Hyderabad. Customer: "{speech_result}"
 
 Properties: Gachibowli/Hitec City. 2BHK: ₹60L-1.2Cr, 3BHK: ₹1-2.5Cr. RERA approved.
 
-Task: Respond in 2-3 sentences in English ONLY. Ask about budget/location OR share property details. Use name Arjun.
+Task: Respond in 2-3 sentences in English ONLY. Ask about budget/location OR share property details. Use name Padma.
 
 Your response:"""
         
@@ -1619,7 +1627,7 @@ Ask about: Their voice content needs OR Demo scheduling OR Pricing details.
 
 Your specific response:"""
             else:  # real_estate
-                retry_prompt = f"""Priya from JK Ventures. Customer: "{speech_result}"
+                retry_prompt = f"""Priya from BB Ventures. Customer: "{speech_result}"
 
 IMPORTANT: Be SPECIFIC about Hyderabad properties. English ONLY. NO generic phrases like "let me help".
 
@@ -1820,6 +1828,44 @@ async def recording_webhook(request: Request):
         recording_url = form_data.get("RecordingUrl")
         
         logger.info(f"Recording available - Call: {call_sid}, URL: {recording_url}")
+        
+        # Update the call record with recording URL if it exists in summaries
+        if call_sid in call_summaries:
+            call_summaries[call_sid]["recording_url"] = recording_url
+            
+            # Also update in local storage
+            try:
+                # Determine call type from summary
+                call_type = call_summaries[call_sid].get("summary", {}).get("call_type", "")
+                if not call_type:
+                    # Try to infer from call_sid in active_calls
+                    if call_sid in phone_service.active_calls:
+                        call_type = phone_service.active_calls[call_sid].get("call_type", "")
+                
+                if call_type:
+                    # Normalize call_type
+                    if "b2b" in call_type.lower() or "sales" in call_type.lower():
+                        call_type = "b2b_sales"
+                    elif "real" in call_type.lower() or "estate" in call_type.lower():
+                        call_type = "real_estate"
+                    
+                    # Load the file directly
+                    filename = f"database/{call_type}_records.json"
+                    if os.path.exists(filename):
+                        with open(filename, 'r', encoding='utf-8') as f:
+                            data = json.load(f)
+                        
+                        # Find and update the call record
+                        for record in data.get("calls", []):
+                            if record.get("call_sid") == call_sid:
+                                record["recording_url"] = recording_url
+                                # Save back
+                                with open(filename, 'w', encoding='utf-8') as f:
+                                    json.dump(data, f, indent=2, ensure_ascii=False)
+                                logger.info(f"✅ Recording URL updated for {call_sid} in {call_type}")
+                                break
+            except Exception as e:
+                logger.error(f"Error updating recording URL in storage: {e}")
         
         return {"status": "received"}
         

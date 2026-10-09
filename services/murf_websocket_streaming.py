@@ -358,7 +358,7 @@ async def main():
     # Test English
     print("Testing English voice...")
     await murf_ws.generate_and_save_for_twilio(
-        text="Hello Arjun, this is Priya Sharma from Murf AI. How are you today?",
+        text="Hello Padma, this is Priya Sharma from Murf AI. How are you today?",
         voice_id="en-IN-priya",
         output_path="Voice_outputs/test_en.wav"
     )

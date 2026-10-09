@@ -1,7 +1,7 @@
 """
 Intelligent Phone AI Agent - Real-time, context-aware conversations
 Powered by Azure OpenAI + Murf AI with minimal latency
-Supports: B2B Sales (Murf API) & Real Estate (JK Ventures Hyderabad)
+Supports: B2B Sales (Murf API) & Real Estate (BB Ventures Hyderabad)
 Languages: English, Hindi, Telugu (seamless switching)
 """
 
@@ -59,7 +59,7 @@ class IntelligentPhoneAI:
             },
             "real_estate": {
                 "name": "Rohan Reddy",
-                "company": "JK Ventures",
+                "company": "BB Ventures",
                 "role": "Senior Property Consultant",
                 "voice_id": "en-IN-rohan",
                 "voice_style": "Conversational",
@@ -144,7 +144,7 @@ Example: "Hi {lead_name}, this is {persona['name']} from Murf AI. I'm calling ab
 Generate natural opening:"""
         
         else:  # real_estate
-            # JK Ventures real estate call with PROPERTY SPECIFICS
+            # BB Ventures real estate call with PROPERTY SPECIFICS
             prompt = f"""You are {persona['name']}, a {persona['role']} at {persona['company']}.
 
 PROPERTIES: Hyderabad Premium Real Estate
@@ -157,12 +157,12 @@ You're calling {lead_name} about their property interest in Hyderabad.
 
 Generate a warm opening that:
 1. Greets and confirms {lead_name}
-2. Introduces yourself from JK Ventures
+2. Introduces yourself from BB Ventures
 3. References Hyderabad properties
 4. Creates interest with one detail (location/new listing)
 5. Keep under 30 words
 
-Example: "Hi {lead_name}, this is {persona['name']} from JK Ventures. I'm calling about premium properties in Hyderabad - we have excellent new 3BHK options in Gachibowli. Do you have a moment?"
+Example: "Hi {lead_name}, this is {persona['name']} from BB Ventures. I'm calling about premium properties in Hyderabad - we have excellent new 3BHK options in Gachibowli. Do you have a moment?"
 
 Generate natural opening:"""
         
@@ -346,7 +346,7 @@ Response:"""
 Your expertise: {persona['expertise']}
 Your goal: {persona['goal']}
 
-About JK Ventures:
+About BB Ventures:
 - Specialized in Hyderabad residential and commercial properties
 - Hot areas: Gachibowli, HITEC City, Madhapur, Financial District, Miyapur
 - Price range: 50L - 5Cr (apartments, villas, plots)

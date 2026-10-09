@@ -1,9 +1,9 @@
 /**
- * VoiceFlow AI Platform - Audio Worklet Processor
+ * BoloBot AI Platform - Audio Worklet Processor
  * Ultra-low latency real-time audio processing for WebRTC
  */
 
-class VoiceFlowAudioProcessor extends AudioWorkletProcessor {
+class BoloBotAudioProcessor extends AudioWorkletProcessor {
     constructor(options) {
         super();
         
@@ -40,7 +40,7 @@ class VoiceFlowAudioProcessor extends AudioWorkletProcessor {
         // Initialize message handler
         this.port.onmessage = this.handleMessage.bind(this);
         
-        console.log('[AudioWorklet] VoiceFlow Audio Processor initialized');
+        console.log('[AudioWorklet] BoloBot Audio Processor initialized');
     }
     
     handleMessage(event) {
@@ -292,4 +292,4 @@ class VoiceFlowAudioProcessor extends AudioWorkletProcessor {
 }
 
 // Register the processor
-registerProcessor('voiceflow-audio-processor', VoiceFlowAudioProcessor);
+registerProcessor('bolobot-audio-processor', BoloBotAudioProcessor);

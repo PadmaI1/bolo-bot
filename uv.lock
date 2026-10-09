@@ -381,7 +381,7 @@ wheels = [
 ]
 
 [[package]]
-name = "copilot-self"
+name = "bolobot"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

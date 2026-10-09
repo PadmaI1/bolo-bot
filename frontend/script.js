@@ -1,4 +1,4 @@
-// VoiceFlow AI Platform - Unified JavaScript
+// BoloBot AI Platform - Unified JavaScript
 class VoiceAIInterface {
   constructor(industry) {
     this.industry = industry;

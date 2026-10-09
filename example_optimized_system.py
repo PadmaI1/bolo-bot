@@ -107,7 +107,7 @@ class OptimizedPhoneAISystem:
         else:  # real_estate
             opening_text = (
                 f"Hello! Am I speaking with {customer_name}? Hi, this is Rohan "
-                f"from JK Ventures. I'm calling about your interest in Hyderabad "
+                f"from BB Ventures. I'm calling about your interest in Hyderabad "
                 f"properties. Are you still looking?"
             )
         
@@ -386,7 +386,7 @@ async def demo_conversation():
     opening = await system.start_conversation(
         call_sid=call_sid,
         call_type="b2b_sales",
-        customer_name="Arjun"
+        customer_name="Padma"
     )
     
     print(f"   Agent: {opening['text']}")

@@ -1,7 +1,8 @@
 [project]
-name = "copilot-self"
+name = "bolobot"
 version = "0.1.0"
-description = "Add your description here"
+description = "BoloBot is an AI phone agent for outbound B2B sales and real estate lead qualification. It places Twilio calls and holds natural Hindi/English conversations, powered by Azure OpenAI GPT-4o and Murf AI streaming voices, with a target response time under 1.5s."
+authors = [{ name = "Padma Iyer", email = "padmaiyer01@protonmail.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

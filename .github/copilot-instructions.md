@@ -284,7 +284,7 @@ from twilio.twiml.voice_response import VoiceResponse, Gather
 
 ```python
 audio_bytes, metrics = await ultra_fast_sales.generate_ultra_fast(
-    text="Namaste Arjun! Main aapki kaise madad kar sakti hoon?",
+    text="Namaste Padma! Main aapki kaise madad kar sakti hoon?",
     voice_id="hi-IN-shweta"  # ⭐ PREMIUM Hindi
 )
 print(f"TTFB: {metrics['ttfb_ms']}ms")  # Target: <500ms

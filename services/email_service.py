@@ -170,7 +170,7 @@ class EmailService:
             duration = call_summary.get("duration_seconds", 0)
             
             # Create email
-            subject = f"Premium Properties in {location_preference} - JK Ventures"
+            subject = f"Premium Properties in {location_preference} - BB Ventures"
             
             html_body = f"""
 <!DOCTYPE html>
@@ -191,7 +191,7 @@ class EmailService:
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 JK Ventures - Your Dream Home Awaits</h1>
+            <h1>🏠 BB Ventures - Your Dream Home Awaits</h1>
             <p>Premium Properties in Hyderabad</p>
         </div>
         <div class="content">
@@ -238,9 +238,9 @@ class EmailService:
                 </ul>
             </div>
             
-            <a href="https://jkventures.com/schedule-visit" class="cta-button">📅 Schedule Site Visit</a>
+            <a href="https://bbventures.com/schedule-visit" class="cta-button">📅 Schedule Site Visit</a>
             
-            <h3>💎 Why Choose JK Ventures?</h3>
+            <h3>💎 Why Choose BB Ventures?</h3>
             <ul>
                 <li><strong>15+ Years Experience:</strong> Hyderabad real estate experts</li>
                 <li><strong>5,000+ Happy Families:</strong> Trusted by thousands</li>
@@ -254,13 +254,13 @@ class EmailService:
             <p><strong>Regards,</strong><br>
             Rohan Reddy<br>
             Senior Property Consultant<br>
-            JK Ventures<br>
+            BB Ventures<br>
             📞 +91-XXXX-XXXX-XX<br>
             📧 {self.sender_email}</p>
             
             <div class="footer">
-                <p>JK Ventures - Building Dreams Since 2008</p>
-                <p>🌐 <a href="https://jkventures.com">jkventures.com</a> | 📱 Follow us for latest properties</p>
+                <p>BB Ventures - Building Dreams Since 2008</p>
+                <p>🌐 <a href="https://bbventures.com">bbventures.com</a> | 📱 Follow us for latest properties</p>
             </div>
         </div>
     </div>

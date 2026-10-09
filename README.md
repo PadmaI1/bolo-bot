@@ -1,8 +1,20 @@
-# 🤖 B2B AI Phone Agent Solution
+# 🤖 BoloBot
 
-## 📋 Project Overview
+## 📋 About
 
-An intelligent, lightning-fast B2B AI phone agent system built for automated sales and real estate lead qualification. The system leverages premium AI voices (Murf AI) and GPT-4o to conduct natural, bilingual conversations in Hindi and English, achieving <1.5s response times. It handles outbound calls via Twilio, qualifies leads in real-time, updates CRM automatically, and sends personalized email summaries—all while maintaining persistent call records in a local database for analytics and follow-up.
+BoloBot (“bolo” means speak in Hindi) is an AI voice agent that makes outbound sales calls for you. Start calls from a web dashboard, and BoloBot talks to leads in Hindi, English or a natural mix of both. It detects sentiment and intent as the conversation goes, and keeps a short memory of recent exchanges.
+
+### What it does
+
+- **Outbound calling:** Twilio-powered calls from a web dashboard, with test-call support.
+- **Bilingual conversations:** Hindi, English and mixed replies, with fast language detection (Telugu too).
+- **Low-latency voice:** Streaming text-to-speech tuned for phone lines (8kHz mono).
+- **Sales:** Personas, a sales copilot (battle cards, coaching) and B2B sales records.
+- **Real estate:** Lead qualification, property matching, appointment setting and portal integration.
+- **CRM and follow-up:** Salesforce, Zoho and a mock CRM, plus an email summary after each call.
+- **Analytics:** Saved call records, performance analytics, an optimizer and rate limiting.
+
+**Built with:** FastAPI, AsyncIO, WebSockets, Twilio Voice, Azure OpenAI GPT-4o, Murf AI, Bootstrap 5 and vanilla JavaScript.
 
 ## 🛠️ Tech Stack
 
@@ -145,32 +157,32 @@ Call Completion
                │                    │                    │
                ▼                    ▼                    ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                    EXTERNAL INTEGRATIONS LAYER                       │
+│                    EXTERNAL INTEGRATIONS LAYER                      │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Twilio Voice API    │  Azure OpenAI        │  Murf AI WebSocket   │
-│  ┌─────────────────┐ │  ┌─────────────────┐ │  ┌───────────────┐  │
-│  │ • Outbound calls│ │  │ • GPT-4o        │ │  │ • hi-IN-shaan │  │
-│  │ • TwiML webhooks│ │  │ • Chat API      │ │  │ • hi-IN-shweta│  │
-│  │ • Transcription │ │  │ • 2024-12-01    │ │  │ • en-IN-priya │  │
-│  │ • Recording     │ │  │ • 200 tokens    │ │  │ • Streaming   │  │
-│  └─────────────────┘ │  └─────────────────┘ │  └───────────────┘  │
-│                      │                        │                     │
-│  Mock CRM / SFDC    │  Gmail SMTP           │  Local Database      │
-│  ┌─────────────────┐ │  ┌─────────────────┐ │  ┌───────────────┐  │
-│  │ • Lead tracking │ │  │ • Send emails   │ │  │ • JSON files  │  │
-│  │ • Contact update│ │  │ • Call summaries│ │  │ • Persistent  │  │
-│  │ • Sales pipeline│ │  │ • HTML templates│ │  │ • Fast access │  │
-│  └─────────────────┘ │  └─────────────────┘ │  └───────────────┘  │
+│  Twilio Voice API    │  Azure OpenAI        │  Murf AI WebSocket    │
+│  ┌─────────────────┐ │  ┌─────────────────┐ │  ┌───────────────┐    │
+│  │ • Outbound calls│ │  │ • GPT-4o        │ │  │ • hi-IN-shaan │    │
+│  │ • TwiML webhooks│ │  │ • Chat API      │ │  │ • hi-IN-shweta│    │
+│  │ • Transcription │ │  │ • 2024-12-01    │ │  │ • en-IN-priya │    │
+│  │ • Recording     │ │  │ • 200 tokens    │ │  │ • Streaming   │    │
+│  └─────────────────┘ │  └─────────────────┘ │  └───────────────┘    │
+│                      │                      │                       │
+│  Mock CRM / SFDC     │  Gmail SMTP          │  Local Database       │
+│  ┌─────────────────┐ │  ┌─────────────────┐ │  ┌───────────────┐    │
+│  │ • Lead tracking │ │  │ • Send emails   │ │  │ • JSON files  │    │ 
+│  │ • Contact update│ │  │ • Call summaries│ │  │ • Persistent  │    │
+│  │ • Sales pipeline│ │  │ • HTML templates│ │  │ • Fast access │    │
+│  └─────────────────┘ │  └─────────────────┘ │  └───────────────┘    │
 └─────────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         DATA PERSISTENCE LAYER                       │
+│                         DATA PERSISTENCE LAYER                      │
 ├─────────────────────────────────────────────────────────────────────┤
-│  database/b2b_sales_records.json    │  database/real_estate_records│
-│  - Call history                     │  .json                       │
-│  - Lead scores                      │  - Property inquiries        │
-│  - Conversation summaries           │  - Qualification scores      │
-│  - Email status                     │  - Next actions              │
+│  database/b2b_sales_records.json    │  database/real_estate_records │
+│  - Call history                     │  .json                        │
+│  - Lead scores                      │  - Property inquiries         │
+│  - Conversation summaries           │  - Qualification scores       │
+│  - Email status                     │  - Next actions               │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -198,6 +210,7 @@ Call Completion
 ## 👨‍💻 Author
 
 **Padma Iyer**  
+Email: [padmaiyer01@protonmail.com](mailto:padmaiyer01@protonmail.com)
 
 ## 🙏 Acknowledgments
 
